@@ -8,12 +8,15 @@ import type { ReflectionVisibility } from "@/types/reflection";
 
 const categories = ["Class learning", "Project work", "CCA", "Service", "Personal growth"];
 const competencies = [
-  "Critical thinking",
-  "Communication",
-  "Collaboration",
-  "Creativity",
-  "Civic literacy",
-  "Self-management"
+  "Critical Thinking",
+  "Adaptive Thinking",
+  "Inventive Thinking",
+  "Collaboration Skills",
+  "Communication Skills",
+  "Information Skills",
+  "Civic Literacy",
+  "Global Literacy",
+  "Cross-Cultural Literacy"
 ];
 const MAX_IMAGES = 3;
 type SelectedImage = {
