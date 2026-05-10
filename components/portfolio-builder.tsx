@@ -83,6 +83,7 @@ export function PortfolioBuilder() {
   const [growthStatement, setGrowthStatement] = useState(
     "Over this period, I became more intentional about my learning choices and reflected on how I respond to feedback, collaboration, and challenges."
   );
+  const [exportHint, setExportHint] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -102,8 +103,7 @@ export function PortfolioBuilder() {
 
   function exportToPdf() {
     if (selectedReflections.length === 0) return;
-    const printWindow = window.open("", "_blank", "noopener,noreferrer");
-    if (!printWindow) return;
+    setExportHint("");
 
     const html = buildPortfolioHtml(
       title.trim() || "My Learning Portfolio",
@@ -112,11 +112,37 @@ export function PortfolioBuilder() {
       user?.displayName ?? "Student"
     );
 
-    printWindow.document.open();
-    printWindow.document.write(html);
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const printWindow = window.open(url, "_blank");
+
+    if (!printWindow) {
+      const downloadLink = document.createElement("a");
+      downloadLink.href = url;
+      downloadLink.download = "portfolio-print-view.html";
+      downloadLink.click();
+      setExportHint(
+        "Popup blocked on this browser. We downloaded a print page file. Open it and use Share/Print to save PDF."
+      );
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+      return;
+    }
+
+    setExportHint(
+      "A print view has been opened. If the print dialog does not appear, use your browser Share menu and choose Print or Save as PDF."
+    );
+
+    setTimeout(() => {
+      try {
+        printWindow.focus();
+        printWindow.print();
+      } catch {
+        setExportHint(
+          "Use your browser Share menu in the opened page and choose Print or Save as PDF."
+        );
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 5000);
+    }, 350);
   }
 
   return (
@@ -137,6 +163,11 @@ export function PortfolioBuilder() {
           Export PDF ({selectedReflections.length})
         </button>
       </div>
+      {exportHint ? (
+        <p className="mt-3 rounded-xl bg-skywash px-3 py-2 text-sm font-semibold text-moss">
+          {exportHint}
+        </p>
+      ) : null}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
         <div className="space-y-3 rounded-2xl border border-ink/10 bg-mist p-4">
