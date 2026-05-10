@@ -15,6 +15,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, signOut, isTeacher } = useAuth();
   const showQuickAdd = pathname !== "/dashboard" && pathname !== "/teacher";
+  const mobileLinks = links.filter(link => (link.href === "/teacher" ? isTeacher : true));
 
   function isActivePath(href: string) {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -27,7 +28,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="text-sm font-black uppercase tracking-[0.08em] text-ink">
             Student's Companion
           </Link>
-          <nav className="hidden items-center gap-1 rounded-full border border-ink/10 bg-white/70 p-1 md:flex">
+          <nav className="hidden items-center gap-1 rounded-full border border-ink/10 bg-white/70 p-1 sm:flex">
             {links.map(link => {
               if (link.href === "/teacher" && !isTeacher) return null;
               const isActive = isActivePath(link.href);
@@ -59,22 +60,21 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       {showQuickAdd ? (
         <Link
           href="/dashboard#compose"
-          className="fixed bottom-24 right-4 z-20 grid h-12 w-12 place-items-center rounded-full bg-ink text-2xl font-bold text-white shadow-soft sm:hidden"
+          className="fixed bottom-24 right-4 z-30 grid h-12 w-12 place-items-center rounded-full bg-ink text-2xl font-bold text-white shadow-soft sm:hidden"
         >
           +
         </Link>
       ) : null}
 
-      <nav className="mx-auto mt-2 flex w-full max-w-5xl gap-2 overflow-x-auto pb-1 md:hidden">
-        {links
-          .filter(link => (link.href === "/teacher" ? isTeacher : true))
-          .map(link => {
+      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-ink/10 bg-mist/95 px-3 pb-4 pt-2 backdrop-blur sm:hidden">
+        <div className={`grid gap-2 ${mobileLinks.length === 4 ? "grid-cols-4" : "grid-cols-3"}`}>
+          {mobileLinks.map(link => {
             const isActive = isActivePath(link.href);
             return (
               <Link
                 key={link.href}
                 href={link.href}
-                className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold ${
+                className={`rounded-xl px-2 py-2 text-center text-xs font-semibold ${
                   isActive ? "bg-ink text-white" : "bg-white text-ink/70"
                 }`}
               >
@@ -82,6 +82,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               </Link>
             );
           })}
+        </div>
       </nav>
     </main>
   );
