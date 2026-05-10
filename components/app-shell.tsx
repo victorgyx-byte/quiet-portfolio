@@ -27,7 +27,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="text-sm font-black uppercase tracking-[0.08em] text-ink">
             Student's Companion
           </Link>
-          <nav className="hidden items-center gap-1 rounded-full border border-ink/10 bg-white/70 p-1 sm:flex">
+          <nav className="hidden items-center gap-1 rounded-full border border-ink/10 bg-white/70 p-1 md:flex">
             {links.map(link => {
               if (link.href === "/teacher" && !isTeacher) return null;
               const isActive = isActivePath(link.href);
@@ -65,26 +65,23 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
       ) : null}
 
-      <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-ink/10 bg-mist/95 px-3 pb-4 pt-2 backdrop-blur sm:hidden">
-        <div className="grid grid-cols-3 gap-2">
-          {links
-            .filter(link => (link.href === "/teacher" ? isTeacher : true))
-            .filter(link => link.href !== "/teacher")
-            .map(link => {
-              const isActive = isActivePath(link.href);
-              return (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  className={`rounded-xl px-3 py-2 text-center text-xs font-semibold ${
-                    isActive ? "bg-ink text-white" : "bg-white text-ink/70"
-                  }`}
-                >
-                  {link.label}
-                </Link>
-              );
-            })}
-        </div>
+      <nav className="mx-auto mt-2 flex w-full max-w-5xl gap-2 overflow-x-auto pb-1 md:hidden">
+        {links
+          .filter(link => (link.href === "/teacher" ? isTeacher : true))
+          .map(link => {
+            const isActive = isActivePath(link.href);
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`whitespace-nowrap rounded-full px-4 py-2 text-xs font-semibold ${
+                  isActive ? "bg-ink text-white" : "bg-white text-ink/70"
+                }`}
+              >
+                {link.label}
+              </Link>
+            );
+          })}
       </nav>
     </main>
   );

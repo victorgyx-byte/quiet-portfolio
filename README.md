@@ -44,6 +44,7 @@ A mobile-first student portfolio MVP for secondary school reflections, built wit
 - `app/dashboard/page.tsx` renders the protected student dashboard.
 - `app/timeline/page.tsx` renders the protected student timeline page.
 - `app/teacher/page.tsx` renders the protected teacher dashboard.
+- `app/api/image-proxy/route.ts` proxies Firebase image URLs for reliable PDF embedding in browsers.
 - `app/globals.css` defines Tailwind layers and app-wide background styles.
 - `components/auth-provider.tsx` listens to Firebase Auth and exposes login state.
 - `components/sign-in-button.tsx` handles Google sign-in.
