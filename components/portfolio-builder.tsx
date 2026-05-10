@@ -26,38 +26,32 @@ function addPageIfNeeded(doc: { addPage: () => void }, cursor: number, needed = 
 
 async function imageUrlToJpegDataUrl(url: string) {
   try {
+    const proxyUrl = `/api/image-proxy?url=${encodeURIComponent(url)}`;
+    const response = await fetch(proxyUrl);
+    if (!response.ok) return "";
+    const blob = await response.blob();
     return await new Promise<string>((resolve, reject) => {
-      const image = new Image();
-      image.crossOrigin = "anonymous";
-      image.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = image.naturalWidth || image.width;
-        canvas.height = image.naturalHeight || image.height;
-        const context = canvas.getContext("2d");
-        if (!context) {
-          reject(new Error("No canvas context."));
-          return;
-        }
-        context.drawImage(image, 0, 0);
-        resolve(canvas.toDataURL("image/jpeg", 0.9));
-      };
-      image.onerror = () => reject(new Error("Image load failed."));
-      image.src = url;
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(String(reader.result));
+      reader.onerror = () => reject(new Error("FileReader failed."));
+      reader.readAsDataURL(blob);
     });
   } catch {
-    try {
-      const response = await fetch(url, { mode: "cors" });
-      const blob = await response.blob();
-      return await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(String(reader.result));
-        reader.onerror = () => reject(new Error("FileReader failed."));
-        reader.readAsDataURL(blob);
-      });
-    } catch {
-      return "";
-    }
+    return "";
   }
+}
+
+function getImageSize(dataUrl: string) {
+  return new Promise<{ width: number; height: number }>((resolve, reject) => {
+    const image = new Image();
+    image.onload = () =>
+      resolve({
+        width: image.naturalWidth || image.width,
+        height: image.naturalHeight || image.height
+      });
+    image.onerror = () => reject(new Error("Could not read image size."));
+    image.src = dataUrl;
+  });
 }
 
 export function PortfolioBuilder() {
@@ -156,14 +150,28 @@ export function PortfolioBuilder() {
         y += bodyLines.length * 5 + 4;
 
         for (const image of reflection.images ?? []) {
-          y = addPageIfNeeded(doc, y, 62);
+          y = addPageIfNeeded(doc, y, 40);
           const dataUrl = await imageUrlToJpegDataUrl(image.url);
           if (!dataUrl) {
             skippedImageCount += 1;
             continue;
           }
-          doc.addImage(dataUrl, "JPEG", margin, y, width, 55, undefined, "FAST");
-          y += 59;
+          const { width: sourceWidth, height: sourceHeight } = await getImageSize(dataUrl);
+          const ratio = sourceHeight / sourceWidth;
+          const renderWidth = width;
+          const renderHeight = Math.max(24, renderWidth * ratio);
+          y = addPageIfNeeded(doc, y, renderHeight + 6);
+          doc.addImage(
+            dataUrl,
+            "JPEG",
+            margin,
+            y,
+            renderWidth,
+            renderHeight,
+            undefined,
+            "FAST"
+          );
+          y += renderHeight + 4;
         }
 
         y += 4;
@@ -177,8 +185,9 @@ export function PortfolioBuilder() {
       } else {
         setExportHint("Downloaded portfolio.pdf with images.");
       }
-    } catch {
-      setExportHint("Could not generate PDF on this browser. Please try Chrome or Safari.");
+    } catch (error) {
+      const message = error instanceof Error ? error.message : "Unknown error";
+      setExportHint(`Could not generate PDF: ${message}`);
     }
   }
 
