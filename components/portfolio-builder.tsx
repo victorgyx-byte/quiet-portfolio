@@ -15,64 +15,27 @@ function formatDate(reflection: Reflection) {
   }).format(date);
 }
 
-function buildPortfolioHtml(
-  portfolioTitle: string,
-  growthStatement: string,
-  selectedReflections: Reflection[],
-  studentName: string
-) {
-  const cards = selectedReflections
-    .map(reflection => {
-      const imagesHtml = (reflection.images ?? [])
-        .map(
-          image => `
-          <img src="${image.url}" alt="Reflection image" style="width: 32%; height: 130px; object-fit: cover; border-radius: 10px; border: 1px solid #d6dfe1;" />
-        `
-        )
-        .join("");
+function addPageIfNeeded(doc: { addPage: () => void }, cursor: number, needed = 18) {
+  const limit = 282;
+  if (cursor + needed > limit) {
+    doc.addPage();
+    return 20;
+  }
+  return cursor;
+}
 
-      return `
-      <article style="margin-bottom: 22px; border: 1px solid #d6dfe1; border-radius: 14px; padding: 16px;">
-        <div style="display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap;">
-          <span style="background: #e8f1f2; color: #425f57; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700;">${reflection.competency}</span>
-          <span style="background: #f5eee5; color: #b86b5a; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700;">${reflection.category}</span>
-          <span style="background: #f6f8f5; color: #5f6e74; border-radius: 999px; padding: 4px 10px; font-size: 12px; font-weight: 700;">${formatDate(reflection)}</span>
-        </div>
-        <h3 style="margin: 0 0 8px; font-size: 18px;">${reflection.title}</h3>
-        <p style="margin: 0; color: #38484d; white-space: pre-line; line-height: 1.6;">${reflection.body}</p>
-        ${
-          imagesHtml
-            ? `<div style="display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px;">${imagesHtml}</div>`
-            : ""
-        }
-      </article>
-    `;
-    })
-    .join("");
-
-  return `
-  <html>
-    <head>
-      <title>${portfolioTitle}</title>
-      <meta charset="utf-8" />
-    </head>
-    <body style="font-family: Avenir Next, Segoe UI, sans-serif; color: #263238; background: #ffffff; margin: 0; padding: 28px;">
-      <header style="margin-bottom: 18px; border-bottom: 2px solid #e8f1f2; padding-bottom: 14px;">
-        <p style="margin: 0; font-size: 12px; color: #6d7f86; text-transform: uppercase; letter-spacing: 0.12em;">Student Portfolio Submission</p>
-        <h1 style="margin: 8px 0 4px; font-size: 32px;">${portfolioTitle}</h1>
-        <p style="margin: 0; color: #4f5f64;">${studentName}</p>
-      </header>
-      <section style="margin-bottom: 20px;">
-        <h2 style="margin: 0 0 8px; font-size: 20px;">Growth Statement</h2>
-        <p style="margin: 0; white-space: pre-line; line-height: 1.7; color: #38484d;">${growthStatement}</p>
-      </section>
-      <section>
-        <h2 style="margin: 0 0 12px; font-size: 20px;">Selected Reflections</h2>
-        ${cards}
-      </section>
-    </body>
-  </html>
-  `;
+async function imageUrlToDataUrl(url: string) {
+  try {
+    const response = await fetch(url);
+    const blob = await response.blob();
+    return await new Promise<string>(resolve => {
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(String(reader.result));
+      reader.readAsDataURL(blob);
+    });
+  } catch {
+    return "";
+  }
 }
 
 export function PortfolioBuilder() {
@@ -101,49 +64,91 @@ export function PortfolioBuilder() {
     );
   }
 
-  function exportToPdf() {
+  async function exportToPdf() {
     if (selectedReflections.length === 0) return;
     setExportHint("");
 
-    const html = buildPortfolioHtml(
-      title.trim() || "My Learning Portfolio",
-      growthStatement.trim() || "Growth statement",
-      selectedReflections,
-      user?.displayName ?? "Student"
-    );
+    try {
+      const { jsPDF } = await import("jspdf");
+      const doc = new jsPDF({
+        orientation: "p",
+        unit: "mm",
+        format: "a4"
+      });
 
-    const printWindow = window.open("", "_blank");
+      const margin = 16;
+      const width = 210 - margin * 2;
+      let y = 20;
 
-    if (!printWindow) {
-      setExportHint(
-        "Popup blocked on this browser. Allow popups for this site, then tap Export PDF again."
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(20);
+      doc.text(title.trim() || "My Learning Portfolio", margin, y);
+      y += 8;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      doc.text(user?.displayName ?? "Student", margin, y);
+      y += 10;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("Growth Statement", margin, y);
+      y += 7;
+
+      doc.setFont("helvetica", "normal");
+      doc.setFontSize(11);
+      const growthLines = doc.splitTextToSize(
+        growthStatement.trim() || "Growth statement",
+        width
       );
-      return;
+      doc.text(growthLines, margin, y);
+      y += growthLines.length * 6 + 6;
+
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      y = addPageIfNeeded(doc, y, 16);
+      doc.text("Selected Reflections", margin, y);
+      y += 8;
+
+      for (const reflection of selectedReflections) {
+        y = addPageIfNeeded(doc, y, 36);
+
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(12);
+        doc.text(reflection.title, margin, y);
+        y += 6;
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(10);
+        doc.text(
+          `${reflection.competency} | ${reflection.category} | ${formatDate(reflection)}`,
+          margin,
+          y
+        );
+        y += 6;
+
+        const bodyLines = doc.splitTextToSize(reflection.body, width);
+        doc.setFontSize(11);
+        doc.text(bodyLines, margin, y);
+        y += bodyLines.length * 5 + 4;
+
+        for (const image of reflection.images ?? []) {
+          y = addPageIfNeeded(doc, y, 62);
+          const dataUrl = await imageUrlToDataUrl(image.url);
+          if (!dataUrl) continue;
+          const format = dataUrl.startsWith("data:image/png") ? "PNG" : "JPEG";
+          doc.addImage(dataUrl, format, margin, y, width, 55, undefined, "FAST");
+          y += 59;
+        }
+
+        y += 4;
+      }
+
+      doc.save("portfolio.pdf");
+      setExportHint("Downloaded portfolio.pdf");
+    } catch {
+      setExportHint("Could not generate PDF on this browser. Please try Chrome or Safari.");
     }
-
-    const withPrintHelper = html.replace(
-      "</body>",
-      `
-      <div style="position: fixed; right: 16px; bottom: 16px; display: flex; gap: 8px;">
-        <button onclick="window.print()" style="border:0; background:#263238; color:#fff; border-radius:999px; padding:10px 14px; font-weight:700; cursor:pointer;">Print / Save PDF</button>
-      </div>
-      <script>
-        window.addEventListener('load', function() {
-          setTimeout(function() {
-            try { window.print(); } catch (e) {}
-          }, 250);
-        });
-      </script>
-      </body>`
-    );
-
-    printWindow.document.open();
-    printWindow.document.write(withPrintHelper);
-    printWindow.document.close();
-
-    setExportHint(
-      "A print view has been opened. If the print dialog does not appear, use your browser Share menu and choose Print or Save as PDF."
-    );
   }
 
   return (
