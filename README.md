@@ -10,6 +10,7 @@ A mobile-first student portfolio MVP for secondary school reflections, built wit
 - Add reflection form
 - Optional image upload in reflections
 - Student reflection timeline
+- Portfolio builder with reflection selection and PDF export
 - Basic teacher dashboard for reflections students choose to share
 - Firestore rules starter file
 
@@ -49,6 +50,7 @@ A mobile-first student portfolio MVP for secondary school reflections, built wit
 - `components/app-shell.tsx` provides the logged-in navigation frame.
 - `components/landing-page.tsx` contains the public first screen.
 - `components/student-dashboard.tsx` composes the student reflection page.
+- `components/portfolio-builder.tsx` builds a submission-ready portfolio and exports it with browser Print to PDF.
 - `components/reflection-form.tsx` saves new reflections to Firestore.
 - `components/reflection-form.tsx` saves reflections and uploads optional images to Firebase Storage.
 - `components/reflection-timeline.tsx` subscribes to a student's own reflections.
