@@ -2,7 +2,6 @@
 
 import { useAuth } from "@/components/auth-provider";
 import { ReflectionForm } from "@/components/reflection-form";
-import { ReflectionTimeline } from "@/components/reflection-timeline";
 
 export function StudentDashboard() {
   const { user } = useAuth();
@@ -21,10 +20,7 @@ export function StudentDashboard() {
         </p>
       </section>
 
-      <div className="grid gap-5 lg:grid-cols-[0.94fr_1.06fr]">
-        <ReflectionForm />
-        <ReflectionTimeline />
-      </div>
+      <ReflectionForm />
     </div>
   );
 }

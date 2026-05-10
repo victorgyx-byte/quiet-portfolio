@@ -9,7 +9,7 @@ A mobile-first student portfolio MVP for secondary school reflections, built wit
 - Protected student dashboard
 - Add reflection form
 - Optional image upload in reflections
-- Student reflection timeline
+- Student reflection timeline in its own tab
 - Portfolio builder with reflection selection and PDF export
 - Basic teacher dashboard for reflections students choose to share
 - Firestore rules starter file
@@ -42,6 +42,7 @@ A mobile-first student portfolio MVP for secondary school reflections, built wit
 - `app/layout.tsx` wraps every page with shared metadata and auth state.
 - `app/page.tsx` renders the landing page.
 - `app/dashboard/page.tsx` renders the protected student dashboard.
+- `app/timeline/page.tsx` renders the protected student timeline page.
 - `app/teacher/page.tsx` renders the protected teacher dashboard.
 - `app/globals.css` defines Tailwind layers and app-wide background styles.
 - `components/auth-provider.tsx` listens to Firebase Auth and exposes login state.
