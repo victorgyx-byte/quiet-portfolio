@@ -8,19 +8,19 @@ export function StudentDashboard() {
   const firstName = user?.displayName?.split(" ")[0] ?? "there";
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <section className="rounded-3xl bg-ink p-5 text-white shadow-soft">
-        <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/55">
-          Student dashboard
+        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/55">
+          Reflection Space
         </p>
-        <h1 className="mt-3 text-3xl font-bold">Welcome, {firstName}.</h1>
-        <p className="mt-3 max-w-2xl text-sm leading-6 text-white/70">
-          This is your private record of learning. You decide what to keep for
-          yourself and what to share with a teacher.
+        <h1 className="mt-2 text-2xl font-bold sm:text-3xl">Hi {firstName}, what shifted today?</h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-white/72">
+          Add one short reflection. Keep it private, or share when you are ready.
         </p>
       </section>
-
-      <ReflectionForm />
+      <div id="compose" className="scroll-mt-24">
+        <ReflectionForm />
+      </div>
     </div>
   );
 }

@@ -127,13 +127,13 @@ export function ReflectionForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="rounded-3xl border border-white/80 bg-white/82 p-5 shadow-soft backdrop-blur"
+      className="rounded-3xl border border-white/80 bg-white/88 p-4 shadow-soft backdrop-blur sm:p-5"
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-ink">New reflection</h2>
+          <h2 className="text-xl font-bold text-ink sm:text-2xl">New reflection</h2>
           <p className="mt-1 text-sm leading-6 text-ink/62">
-            Capture one moment, decision, or piece of evidence.
+            Keep it short. One moment, one insight, one next step.
           </p>
         </div>
         <span className="rounded-full bg-skywash px-3 py-1 text-xs font-semibold text-moss">
@@ -295,7 +295,7 @@ export function ReflectionForm() {
         <button
           type="submit"
           disabled={status === "saving" || !title.trim() || !body.trim()}
-          className="min-h-12 w-full rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:-translate-y-0.5 hover:bg-moss disabled:cursor-not-allowed disabled:opacity-45"
+          className="min-h-12 w-full rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:bg-moss disabled:cursor-not-allowed disabled:opacity-45"
         >
           {status === "saving" ? "Saving..." : "Save reflection"}
         </button>

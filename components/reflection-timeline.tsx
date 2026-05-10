@@ -31,11 +31,11 @@ export function ReflectionTimeline() {
   }, [user]);
 
   return (
-    <section className="rounded-3xl border border-white/80 bg-white/64 p-5 shadow-soft backdrop-blur">
+    <section className="rounded-3xl border border-white/80 bg-white/70 p-4 shadow-soft backdrop-blur sm:p-5">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-ink">Timeline</h2>
-          <p className="mt-1 text-sm text-ink/62">Your reflections in reverse order.</p>
+          <h2 className="text-xl font-bold text-ink sm:text-2xl">Timeline</h2>
+          <p className="mt-1 text-sm text-ink/62">Your reflection feed in reverse order.</p>
         </div>
         <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-ink/60">
           {reflections.length} saved
@@ -48,7 +48,7 @@ export function ReflectionTimeline() {
         </div>
       ) : null}
 
-      <div className="mt-5 space-y-3">
+      <div className="mt-4 space-y-4">
         {reflections.length === 0 && !error ? (
           <div className="rounded-2xl border border-dashed border-ink/15 bg-mist p-6 text-sm leading-6 text-ink/62">
             No reflections yet. Start with one small moment from this week.
@@ -58,46 +58,48 @@ export function ReflectionTimeline() {
         {reflections.map(reflection => (
           <article
             key={reflection.id}
-            className="rounded-2xl border border-ink/8 bg-white p-4"
+            className="overflow-hidden rounded-2xl border border-ink/10 bg-white"
           >
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="rounded-full bg-skywash px-3 py-1 text-xs font-semibold text-moss">
-                {reflection.competency}
-              </span>
-              <span className="rounded-full bg-oat px-3 py-1 text-xs font-semibold text-clay">
-                {reflection.category}
-              </span>
-              <span className="rounded-full bg-mist px-3 py-1 text-xs font-semibold text-ink/56">
-                {reflection.visibility === "private" ? "Private" : "Shared"}
-              </span>
-            </div>
-            <h3 className="mt-4 text-lg font-bold text-ink">{reflection.title}</h3>
-            <p className="mt-2 whitespace-pre-line text-sm leading-6 text-ink/70">
-              {reflection.body}
-            </p>
             {reflection.images?.length ? (
-              <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-3">
+              <div className="grid grid-cols-2 gap-[1px] bg-ink/10 sm:grid-cols-3">
                 {reflection.images.map(image => (
                   <a
                     key={image.path}
                     href={image.url}
                     target="_blank"
                     rel="noreferrer"
-                    className="block overflow-hidden rounded-xl border border-ink/10"
+                    className="block bg-white"
                   >
                     <img
                       src={image.url}
                       alt="Reflection upload"
-                      className="h-24 w-full object-cover"
+                      className="h-28 w-full object-cover"
                       loading="lazy"
                     />
                   </a>
                 ))}
               </div>
             ) : null}
-            <p className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-ink/42">
-              {formatDate(reflection)}
-            </p>
+            <div className="p-4">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="rounded-full bg-skywash px-3 py-1 text-xs font-semibold text-moss">
+                  {reflection.competency}
+                </span>
+                <span className="rounded-full bg-oat px-3 py-1 text-xs font-semibold text-clay">
+                  {reflection.category}
+                </span>
+                <span className="rounded-full bg-mist px-3 py-1 text-xs font-semibold text-ink/56">
+                  {reflection.visibility === "private" ? "Private" : "Shared"}
+                </span>
+              </div>
+              <h3 className="mt-3 text-lg font-bold text-ink">{reflection.title}</h3>
+              <p className="mt-2 whitespace-pre-line text-sm leading-6 text-ink/70">
+                {reflection.body}
+              </p>
+              <p className="mt-3 text-xs font-semibold uppercase tracking-[0.14em] text-ink/42">
+                {formatDate(reflection)}
+              </p>
+            </div>
           </article>
         ))}
       </div>

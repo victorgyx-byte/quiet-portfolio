@@ -8,11 +8,11 @@ export default function PortfolioPage() {
       <ProtectedRoute>
         <div className="space-y-5">
           <section className="rounded-3xl bg-moss p-5 text-white shadow-soft">
-            <p className="text-sm font-semibold uppercase tracking-[0.18em] text-white/60">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/60">
               Portfolio
             </p>
-            <h1 className="mt-3 text-3xl font-bold">Build your submission</h1>
-            <p className="mt-3 max-w-2xl text-sm leading-6 text-white/74">
+            <h1 className="mt-2 text-2xl font-bold sm:text-3xl">Build your submission</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-white/74">
               Select reflections, write your growth statement, and export a clean
               portfolio PDF for submission.
             </p>
