@@ -20,7 +20,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       <header className="sticky top-0 z-10 -mx-4 border-b border-ink/10 bg-mist/90 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
         <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
           <Link href="/" className="text-base font-bold tracking-normal text-ink">
-            Quiet Portfolio
+            Student's Companion
           </Link>
           <nav className="flex items-center gap-1 rounded-full border border-ink/10 bg-white/70 p-1">
             {links.map(link => {

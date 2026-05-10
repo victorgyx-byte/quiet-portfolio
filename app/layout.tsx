@@ -3,7 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
 
 export const metadata: Metadata = {
-  title: "Quiet Portfolio",
+  title: "Student's Companion",
   description: "A calm student-owned reflection portfolio for secondary school learners."
 };
 

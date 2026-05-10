@@ -1,4 +1,4 @@
-# Quiet Portfolio
+# Student's Companion
 
 A mobile-first student portfolio MVP for secondary school reflections, built with Next.js, Tailwind CSS, Firebase Auth, Firestore, and Vercel.
 

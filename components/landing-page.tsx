@@ -22,7 +22,7 @@ export function LandingPage() {
             Secondary student portfolio
           </p>
           <h1 className="text-5xl font-bold leading-[1.02] tracking-normal text-ink sm:text-6xl">
-            Quiet Portfolio
+            Student's Companion
           </h1>
           <p className="mt-5 max-w-xl text-lg leading-8 text-ink/72">
             A calm space for students to notice progress, connect learning to
