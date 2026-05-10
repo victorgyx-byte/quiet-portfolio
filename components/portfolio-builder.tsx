@@ -112,37 +112,38 @@ export function PortfolioBuilder() {
       user?.displayName ?? "Student"
     );
 
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const printWindow = window.open(url, "_blank");
+    const printWindow = window.open("", "_blank");
 
     if (!printWindow) {
-      const downloadLink = document.createElement("a");
-      downloadLink.href = url;
-      downloadLink.download = "portfolio-print-view.html";
-      downloadLink.click();
       setExportHint(
-        "Popup blocked on this browser. We downloaded a print page file. Open it and use Share/Print to save PDF."
+        "Popup blocked on this browser. Allow popups for this site, then tap Export PDF again."
       );
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
       return;
     }
+
+    const withPrintHelper = html.replace(
+      "</body>",
+      `
+      <div style="position: fixed; right: 16px; bottom: 16px; display: flex; gap: 8px;">
+        <button onclick="window.print()" style="border:0; background:#263238; color:#fff; border-radius:999px; padding:10px 14px; font-weight:700; cursor:pointer;">Print / Save PDF</button>
+      </div>
+      <script>
+        window.addEventListener('load', function() {
+          setTimeout(function() {
+            try { window.print(); } catch (e) {}
+          }, 250);
+        });
+      </script>
+      </body>`
+    );
+
+    printWindow.document.open();
+    printWindow.document.write(withPrintHelper);
+    printWindow.document.close();
 
     setExportHint(
       "A print view has been opened. If the print dialog does not appear, use your browser Share menu and choose Print or Save as PDF."
     );
-
-    setTimeout(() => {
-      try {
-        printWindow.focus();
-        printWindow.print();
-      } catch {
-        setExportHint(
-          "Use your browser Share menu in the opened page and choose Print or Save as PDF."
-        );
-      }
-      setTimeout(() => URL.revokeObjectURL(url), 5000);
-    }, 350);
   }
 
   return (
