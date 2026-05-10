@@ -1,7 +1,6 @@
 "use client";
 
 import { useAuth } from "@/components/auth-provider";
-import { PortfolioBuilder } from "@/components/portfolio-builder";
 import { ReflectionForm } from "@/components/reflection-form";
 import { ReflectionTimeline } from "@/components/reflection-timeline";
 
@@ -26,7 +25,6 @@ export function StudentDashboard() {
         <ReflectionForm />
         <ReflectionTimeline />
       </div>
-      <PortfolioBuilder />
     </div>
   );
 }
