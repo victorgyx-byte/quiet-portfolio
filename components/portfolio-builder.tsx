@@ -94,6 +94,7 @@ export function PortfolioBuilder() {
 
       const margin = 16;
       const width = 210 - margin * 2;
+      const maxImageHeight = 72;
       let y = 20;
 
       doc.setFont("helvetica", "bold");
@@ -158,13 +159,18 @@ export function PortfolioBuilder() {
           }
           const { width: sourceWidth, height: sourceHeight } = await getImageSize(dataUrl);
           const ratio = sourceHeight / sourceWidth;
-          const renderWidth = width;
-          const renderHeight = Math.max(24, renderWidth * ratio);
+          let renderWidth = width;
+          let renderHeight = Math.max(24, renderWidth * ratio);
+          if (renderHeight > maxImageHeight) {
+            renderHeight = maxImageHeight;
+            renderWidth = renderHeight / ratio;
+          }
+          const imageX = margin + (width - renderWidth) / 2;
           y = addPageIfNeeded(doc, y, renderHeight + 6);
           doc.addImage(
             dataUrl,
             "JPEG",
-            margin,
+            imageX,
             y,
             renderWidth,
             renderHeight,
