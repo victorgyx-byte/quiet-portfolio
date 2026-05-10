@@ -24,17 +24,39 @@ function addPageIfNeeded(doc: { addPage: () => void }, cursor: number, needed = 
   return cursor;
 }
 
-async function imageUrlToDataUrl(url: string) {
+async function imageUrlToJpegDataUrl(url: string) {
   try {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return await new Promise<string>(resolve => {
-      const reader = new FileReader();
-      reader.onloadend = () => resolve(String(reader.result));
-      reader.readAsDataURL(blob);
+    return await new Promise<string>((resolve, reject) => {
+      const image = new Image();
+      image.crossOrigin = "anonymous";
+      image.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = image.naturalWidth || image.width;
+        canvas.height = image.naturalHeight || image.height;
+        const context = canvas.getContext("2d");
+        if (!context) {
+          reject(new Error("No canvas context."));
+          return;
+        }
+        context.drawImage(image, 0, 0);
+        resolve(canvas.toDataURL("image/jpeg", 0.9));
+      };
+      image.onerror = () => reject(new Error("Image load failed."));
+      image.src = url;
     });
   } catch {
-    return "";
+    try {
+      const response = await fetch(url, { mode: "cors" });
+      const blob = await response.blob();
+      return await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onloadend = () => resolve(String(reader.result));
+        reader.onerror = () => reject(new Error("FileReader failed."));
+        reader.readAsDataURL(blob);
+      });
+    } catch {
+      return "";
+    }
   }
 }
 
@@ -110,6 +132,7 @@ export function PortfolioBuilder() {
       doc.text("Selected Reflections", margin, y);
       y += 8;
 
+      let skippedImageCount = 0;
       for (const reflection of selectedReflections) {
         y = addPageIfNeeded(doc, y, 36);
 
@@ -134,10 +157,12 @@ export function PortfolioBuilder() {
 
         for (const image of reflection.images ?? []) {
           y = addPageIfNeeded(doc, y, 62);
-          const dataUrl = await imageUrlToDataUrl(image.url);
-          if (!dataUrl) continue;
-          const format = dataUrl.startsWith("data:image/png") ? "PNG" : "JPEG";
-          doc.addImage(dataUrl, format, margin, y, width, 55, undefined, "FAST");
+          const dataUrl = await imageUrlToJpegDataUrl(image.url);
+          if (!dataUrl) {
+            skippedImageCount += 1;
+            continue;
+          }
+          doc.addImage(dataUrl, "JPEG", margin, y, width, 55, undefined, "FAST");
           y += 59;
         }
 
@@ -145,7 +170,13 @@ export function PortfolioBuilder() {
       }
 
       doc.save("portfolio.pdf");
-      setExportHint("Downloaded portfolio.pdf");
+      if (skippedImageCount > 0) {
+        setExportHint(
+          `Downloaded portfolio.pdf. ${skippedImageCount} image(s) could not be embedded; open the image once in browser and retry export.`
+        );
+      } else {
+        setExportHint("Downloaded portfolio.pdf with images.");
+      }
     } catch {
       setExportHint("Could not generate PDF on this browser. Please try Chrome or Safari.");
     }
