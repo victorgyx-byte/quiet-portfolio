@@ -3,6 +3,7 @@ import { NextRequest, NextResponse } from "next/server";
 function isAllowedImageHost(hostname: string) {
   return (
     hostname === "firebasestorage.googleapis.com" ||
+    hostname === "storage.googleapis.com" ||
     hostname.endsWith(".firebasestorage.app")
   );
 }
