@@ -3,15 +3,19 @@
 @tailwind utilities;
 
 :root {
-  color: #263238;
-  background: #f6f8f5;
-  --bg-1: #f7f4ff;
-  --bg-2: #f2fbff;
-  --bg-3: #fffaf2;
-  --ink: #23323a;
-  --accent: #ff6f61;
-  --accent-2: #4e7cff;
-  --accent-3: #18b08e;
+  color: #1f2937;
+  background: #f8fafc;
+  --bg-1: #eef2ff;
+  --bg-2: #ecfeff;
+  --bg-3: #fff7ed;
+  --ink: #1f2937;
+  --muted: #64748b;
+  --surface: #ffffff;
+  --primary: #2563eb;
+  --primary-2: #1d4ed8;
+  --accent-coral: #fb7185;
+  --accent-mint: #14b8a6;
+  --ring: rgba(37, 99, 235, 0.26);
 }
 
 * {
@@ -22,9 +26,9 @@ body {
   min-height: 100vh;
   font-family: var(--font-body), ui-sans-serif, system-ui, sans-serif;
   background:
-    radial-gradient(circle at 12% 8%, var(--bg-1) 0%, transparent 28rem),
-    radial-gradient(circle at 92% 16%, var(--bg-2) 0%, transparent 28rem),
-    linear-gradient(180deg, #fcfcfe 0%, var(--bg-3) 100%);
+    radial-gradient(circle at 10% 4%, var(--bg-1) 0%, transparent 26rem),
+    radial-gradient(circle at 88% 14%, var(--bg-2) 0%, transparent 24rem),
+    linear-gradient(180deg, #fcfdff 0%, #f8fafc 65%, var(--bg-3) 100%);
 }
 
 h1,
@@ -48,47 +52,54 @@ select {
 .btn-primary {
   min-height: 48px;
   width: 100%;
-  border-radius: 16px;
-  background: linear-gradient(135deg, #2a3942 0%, #35515e 100%);
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--primary) 0%, var(--primary-2) 100%);
   padding: 12px 16px;
   font-size: 0.925rem;
   font-weight: 700;
   color: #ffffff;
   transition:
-    background 160ms ease,
-    transform 160ms ease;
+    background 160ms ease, transform 160ms ease, box-shadow 160ms ease;
+  box-shadow: 0 10px 26px rgba(37, 99, 235, 0.28);
 }
 
 .btn-primary:hover {
   transform: translateY(-1px);
-  background: linear-gradient(135deg, #304650 0%, #3e6070 100%);
+  background: linear-gradient(135deg, #285fd7 0%, #1947b8 100%);
+  box-shadow: 0 12px 28px rgba(37, 99, 235, 0.3);
 }
 
 .btn-secondary {
   min-height: 44px;
   width: 100%;
-  border-radius: 14px;
-  border: 1px solid rgba(38, 50, 56, 0.16);
-  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid rgba(100, 116, 139, 0.28);
+  background: #f8fafc;
   padding: 10px 14px;
   font-size: 0.875rem;
   font-weight: 700;
-  color: rgba(38, 50, 56, 0.78);
+  color: #334155;
 }
 
 .btn-tertiary {
   min-height: 34px;
   border-radius: 10px;
-  border: 1px solid rgba(38, 50, 56, 0.14);
+  border: 1px solid rgba(100, 116, 139, 0.24);
   background: #ffffff;
   padding: 6px 10px;
   font-size: 0.75rem;
   font-weight: 700;
-  color: rgba(38, 50, 56, 0.68);
+  color: #475569;
 }
 
 .glass-card {
-  border: 1px solid rgba(255, 255, 255, 0.85);
-  background: rgba(255, 255, 255, 0.82);
-  backdrop-filter: blur(10px);
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  background: rgba(255, 255, 255, 0.88);
+  backdrop-filter: blur(12px);
+}
+
+input:focus,
+textarea:focus,
+select:focus {
+  box-shadow: 0 0 0 3px var(--ring);
 }

@@ -159,7 +159,7 @@ export function ReflectionForm() {
       className="glass-card rounded-3xl p-4 shadow-soft sm:p-5"
     >
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink/50">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
           {stepLabel}
         </p>
         <div className="flex gap-1.5">
@@ -167,7 +167,7 @@ export function ReflectionForm() {
             <span
               key={point}
               className={`h-1.5 w-7 rounded-full ${
-                point <= step ? "bg-moss" : "bg-ink/14"
+                point <= step ? "bg-blue-600" : "bg-slate-200"
               }`}
             />
           ))}
@@ -176,8 +176,8 @@ export function ReflectionForm() {
 
       {status === "saved" ? (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-ink">Saved to timeline</h2>
-          <p className="text-sm leading-6 text-ink/68">
+          <h2 className="text-2xl font-bold text-slate-900">Saved to timeline</h2>
+          <p className="text-sm leading-6 text-slate-600">
             Nice one. Your moment is now part of your growth story.
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
@@ -201,10 +201,10 @@ export function ReflectionForm() {
           {step === 1 ? (
             <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-bold text-ink sm:text-2xl">
+                <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
                   What stayed with you today?
                 </h2>
-                <p className="mt-1 text-sm leading-6 text-ink/62">
+                <p className="mt-1 text-sm leading-6 text-slate-500">
                   Just one moment, thought, or feeling.
                 </p>
               </div>
@@ -215,25 +215,25 @@ export function ReflectionForm() {
                   onChange={event => setMomentText(event.target.value)}
                   placeholder="Write a short moment..."
                   rows={4}
-                  className="w-full resize-none rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-base leading-7 outline-none transition focus:border-moss focus:bg-white"
+                  className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base leading-7 outline-none transition focus:border-blue-500 focus:bg-white"
                 />
               </label>
 
               <label className="block">
-                <span className="text-sm font-semibold text-ink">Photo drop (optional)</span>
+                <span className="text-sm font-semibold text-slate-800">Photo drop (optional)</span>
                 <input
                   type="file"
                   accept="image/*"
                   multiple
                   onChange={handleFileChange}
-                  className="mt-2 min-h-11 w-full rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-sm outline-none transition file:mr-3 file:rounded-full file:border-0 file:bg-ink file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-moss"
+                  className="mt-2 min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition file:mr-3 file:rounded-full file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-700"
                 />
               </label>
 
               {files.length ? (
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {files.map((image, index) => (
-                    <div key={`${image.file.name}-${image.file.size}-${index}`} className="rounded-xl border border-ink/10 bg-white p-2">
+                    <div key={`${image.file.name}-${image.file.size}-${index}`} className="rounded-xl border border-slate-200 bg-white p-2">
                       <img
                         src={image.previewUrl}
                         alt={image.file.name}
@@ -242,7 +242,7 @@ export function ReflectionForm() {
                       <button
                         type="button"
                         onClick={() => removeImage(index)}
-                        className="btn-tertiary mt-2 w-full border-clay/30 bg-oat text-clay"
+                        className="btn-tertiary mt-2 w-full border-rose-200 bg-rose-50 text-rose-600"
                       >
                         Remove
                       </button>
@@ -265,10 +265,10 @@ export function ReflectionForm() {
           {step === 2 ? (
             <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-bold text-ink sm:text-2xl">
+                <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
                   What made this important?
                 </h2>
-                <p className="mt-1 text-sm leading-6 text-ink/62">
+                <p className="mt-1 text-sm leading-6 text-slate-500">
                   What did you notice, what helped, and what might you do next?
                 </p>
               </div>
@@ -277,7 +277,7 @@ export function ReflectionForm() {
                 onChange={event => setElaborationText(event.target.value)}
                 placeholder="Write a short reflection..."
                 rows={5}
-                className="w-full resize-none rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-base leading-7 outline-none transition focus:border-moss focus:bg-white"
+                className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base leading-7 outline-none transition focus:border-blue-500 focus:bg-white"
               />
               <div className="grid gap-2 sm:grid-cols-3">
                 <button
@@ -308,16 +308,16 @@ export function ReflectionForm() {
           {step === 3 ? (
             <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-bold text-ink sm:text-2xl">
+                <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
                   What kind of growth does this show?
                 </h2>
-                <p className="mt-1 text-sm leading-6 text-ink/62">
+                <p className="mt-1 text-sm leading-6 text-slate-500">
                   Pick the one that fits best, then choose context.
                 </p>
               </div>
 
               <div>
-                <p className="mb-2 text-sm font-semibold text-ink">21CC growth tag</p>
+                <p className="mb-2 text-sm font-semibold text-slate-800">21CC growth tag</p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {competencies.map(item => (
                     <button
@@ -326,8 +326,8 @@ export function ReflectionForm() {
                       onClick={() => setCompetency(item)}
                       className={`min-h-11 rounded-2xl border px-3 py-2 text-left text-sm font-semibold ${
                         competency === item
-                          ? "border-moss bg-skywash text-moss"
-                          : "border-ink/10 bg-white text-ink/72"
+                          ? "border-blue-400 bg-blue-50 text-blue-700"
+                          : "border-slate-200 bg-white text-slate-600"
                       }`}
                     >
                       {item}
@@ -337,7 +337,7 @@ export function ReflectionForm() {
               </div>
 
               <div>
-                <p className="mb-2 text-sm font-semibold text-ink">Context</p>
+                <p className="mb-2 text-sm font-semibold text-slate-800">Context</p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {categories.map(item => (
                     <button
@@ -346,8 +346,8 @@ export function ReflectionForm() {
                       onClick={() => setCategory(item)}
                       className={`min-h-11 rounded-2xl border px-3 py-2 text-left text-sm font-semibold ${
                         category === item
-                          ? "border-moss bg-skywash text-moss"
-                          : "border-ink/10 bg-white text-ink/72"
+                          ? "border-teal-400 bg-teal-50 text-teal-700"
+                          : "border-slate-200 bg-white text-slate-600"
                       }`}
                     >
                       {item}
@@ -378,8 +378,8 @@ export function ReflectionForm() {
           {step === 4 ? (
             <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-bold text-ink sm:text-2xl">Who should see this?</h2>
-                <p className="mt-1 text-sm leading-6 text-ink/62">
+                <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Who should see this?</h2>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
                   Sharing with teachers can help you get ideas and guidance. You can
                   keep this private if you prefer.
                 </p>
@@ -402,8 +402,8 @@ export function ReflectionForm() {
                     key={value}
                     className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 ${
                       visibility === value
-                        ? "border-moss bg-skywash"
-                        : "border-ink/10 bg-white"
+                        ? "border-blue-400 bg-blue-50"
+                        : "border-slate-200 bg-white"
                     }`}
                   >
                     <input
@@ -414,17 +414,17 @@ export function ReflectionForm() {
                       onChange={event =>
                         setVisibility(event.target.value as ReflectionVisibility)
                       }
-                      className="mt-1 size-4 accent-moss"
+                      className="mt-1 size-4 accent-blue-600"
                     />
                     <span>
                       <span
                         className={`block text-sm font-semibold ${
-                          visibility === value ? "text-moss" : "text-ink/78"
+                          visibility === value ? "text-blue-700" : "text-slate-700"
                         }`}
                       >
                         {label}
                       </span>
-                      <span className="block text-xs text-ink/58">{help}</span>
+                      <span className="block text-xs text-slate-500">{help}</span>
                     </span>
                   </label>
                 ))}
@@ -450,12 +450,12 @@ export function ReflectionForm() {
           ) : null}
 
           {status === "error" ? (
-            <p className="mt-3 rounded-xl bg-oat px-3 py-2 text-sm font-semibold text-clay">
+            <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
               Something went wrong while saving. Please try again.
             </p>
           ) : null}
           {error ? (
-            <p className="mt-3 rounded-xl bg-oat px-3 py-2 text-sm font-semibold text-clay">
+            <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
               {error}
             </p>
           ) : null}
