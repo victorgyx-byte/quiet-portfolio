@@ -137,9 +137,15 @@ export function ReflectionTimeline() {
       </div>
 
       {selectedReflection ? (
-        <div className="fixed inset-0 z-40 bg-slate-950/55 p-4 backdrop-blur-[1px]">
-          <div className="mx-auto flex h-full w-full max-w-3xl flex-col rounded-3xl bg-white shadow-[0_20px_70px_rgba(15,23,42,0.35)]">
-            <div className="flex items-start justify-between border-b border-slate-200 px-4 py-4 sm:px-5">
+        <div
+          className="fixed inset-0 z-40 bg-slate-900/25 p-0 sm:p-4"
+          onClick={() => setSelectedReflectionId(null)}
+        >
+          <div
+            className="mx-auto mt-14 flex h-[82vh] w-full max-w-3xl flex-col rounded-t-3xl border border-slate-200 bg-white shadow-[0_20px_70px_rgba(15,23,42,0.22)] sm:mt-10 sm:h-[78vh] sm:rounded-3xl"
+            onClick={event => event.stopPropagation()}
+          >
+            <div className="sticky top-0 z-10 flex items-start justify-between border-b border-slate-200 bg-white/95 px-4 py-4 backdrop-blur sm:px-5">
               <div>
                 <h3 className="text-2xl font-bold text-slate-900">
                   {selectedReflection.title}
@@ -153,7 +159,7 @@ export function ReflectionTimeline() {
                 onClick={() => setSelectedReflectionId(null)}
                 className="btn-secondary w-auto px-3"
               >
-                Close
+                Back
               </button>
             </div>
 
@@ -188,7 +194,7 @@ export function ReflectionTimeline() {
                       <img
                         src={image.url}
                         alt="Reflection upload"
-                        className="mx-auto max-h-[58vh] w-auto max-w-full rounded-xl object-contain"
+                        className="mx-auto max-h-[42vh] w-auto max-w-full rounded-xl object-contain"
                         loading="lazy"
                       />
                     </a>
