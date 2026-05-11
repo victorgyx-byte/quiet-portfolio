@@ -142,69 +142,6 @@ export function PortfolioBuilder() {
     };
   }
 
-  function exportSlidesJson() {
-    setSlidesHint("");
-    if (selectedReflections.length === 0) {
-      setSlidesHint("Select at least one reflection first.");
-      return;
-    }
-
-    const payload = buildSlidesPayload();
-    if (!payload) {
-      setSlidesHint("Could not build payload. Please sign in again.");
-      return;
-    }
-
-    const blob = new Blob([JSON.stringify(payload, null, 2)], {
-      type: "application/json"
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = "slides-export-payload.json";
-    link.click();
-    URL.revokeObjectURL(url);
-    setSlidesHint("Downloaded slides-export-payload.json");
-  }
-
-  async function validateSlidesPayload() {
-    setSlidesHint("");
-    if (selectedReflections.length === 0) {
-      setSlidesHint("Select at least one reflection first.");
-      return;
-    }
-
-    const payload = buildSlidesPayload();
-    if (!payload) {
-      setSlidesHint("Could not build payload. Please sign in again.");
-      return;
-    }
-
-    try {
-      const response = await fetch("/api/slides-export", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify(payload)
-      });
-      const data = (await response.json()) as {
-        ok: boolean;
-        message: string;
-        receivedReflections?: number;
-      };
-
-      if (!response.ok || !data.ok) {
-        setSlidesHint(data.message || "Validation failed.");
-        return;
-      }
-
-      setSlidesHint(
-        `Slides payload validated for ${data.receivedReflections ?? 0} reflection(s).`
-      );
-    } catch {
-      setSlidesHint("Could not reach slides validation endpoint.");
-    }
-  }
-
   async function syncToGoogleSlides() {
     setSlidesHint("");
     if (!user) {
@@ -379,22 +316,38 @@ export function PortfolioBuilder() {
             Select reflections and export a submission-ready PDF.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href="/api/google/connect"
-            className="btn-secondary inline-flex w-auto items-center rounded-full px-4"
-          >
-            Connect Google Drive
-          </Link>
+      </div>
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={exportToPdf}
+          disabled={selectedReflections.length === 0}
+          className="btn-primary w-full rounded-2xl disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          Export PDF ({selectedReflections.length})
+        </button>
+        <Link
+          href="/api/google/connect"
+          className="btn-secondary inline-flex w-full items-center justify-center rounded-2xl"
+        >
+          Connect Google Drive
+        </Link>
+      </div>
+      <p className="mt-2 text-sm text-slate-500">
+        First time using Slides? Connect Google Drive once, then sync selected
+        reflections.
+      </p>
+      <div className="mt-2">
           <button
             type="button"
-            onClick={exportToPdf}
-            disabled={selectedReflections.length === 0}
-            className="btn-primary w-auto rounded-full px-4 disabled:cursor-not-allowed disabled:opacity-45"
+            onClick={syncToGoogleSlides}
+            disabled={selectedReflections.length === 0 || isSyncingSlides}
+            className="btn-secondary w-full rounded-2xl disabled:cursor-not-allowed disabled:opacity-45"
           >
-            Export PDF ({selectedReflections.length})
+            {isSyncingSlides
+              ? "Syncing to Google Slides..."
+              : "Sync to My Google Slides Deck"}
           </button>
-        </div>
       </div>
       {googleConnectStatus === "success" ? (
         <p className="mt-3 rounded-xl bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-700">
@@ -422,36 +375,6 @@ export function PortfolioBuilder() {
           {exportHint}
         </p>
       ) : null}
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
-        <button
-          type="button"
-          onClick={exportSlidesJson}
-          disabled={selectedReflections.length === 0}
-          className="btn-secondary disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          Export Slides JSON
-        </button>
-        <button
-          type="button"
-          onClick={validateSlidesPayload}
-          disabled={selectedReflections.length === 0}
-          className="btn-secondary disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          Validate Slides Payload
-        </button>
-      </div>
-      <div className="mt-2">
-        <button
-          type="button"
-          onClick={syncToGoogleSlides}
-          disabled={selectedReflections.length === 0 || isSyncingSlides}
-          className="btn-primary w-full rounded-2xl disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          {isSyncingSlides
-            ? "Syncing to Google Slides..."
-            : "Sync to My Google Slides Deck"}
-        </button>
-      </div>
       {slidesHint ? (
         <p className="mt-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700">
           {slidesHint}
