@@ -20,7 +20,7 @@ const competencies = [
   "Cross-Cultural Literacy"
 ];
 
-const MAX_IMAGES = 3;
+const MAX_IMAGES = 5;
 
 type SelectedImage = {
   file: File;
@@ -90,22 +90,25 @@ export function ReflectionForm() {
     const nextFiles = Array.from(event.target.files ?? []);
     const imageFiles = nextFiles.filter(file => file.type.startsWith("image/"));
 
-    if (imageFiles.length > MAX_IMAGES) {
+    const remainingSlots = Math.max(0, MAX_IMAGES - files.length);
+    if (remainingSlots === 0) {
       setError(`You can upload up to ${MAX_IMAGES} images.`);
-      const selected = imageFiles.slice(0, MAX_IMAGES).map(file => ({
-        file,
-        previewUrl: URL.createObjectURL(file)
-      }));
-      replaceFiles(selected);
+      event.target.value = "";
       return;
     }
 
-    setError("");
-    const selected = imageFiles.map(file => ({
+    if (imageFiles.length > remainingSlots) {
+      setError(`You can upload up to ${MAX_IMAGES} images.`);
+    } else {
+      setError("");
+    }
+
+    const selected = imageFiles.slice(0, remainingSlots).map(file => ({
       file,
       previewUrl: URL.createObjectURL(file)
     }));
-    replaceFiles(selected);
+    setFiles(current => [...current, ...selected]);
+    event.target.value = "";
   }
 
   function removeImage(index: number) {
@@ -230,6 +233,7 @@ export function ReflectionForm() {
                   type="file"
                   accept="image/*"
                   multiple
+                  capture="environment"
                   onChange={handleFileChange}
                   className="mt-2 min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition file:mr-3 file:rounded-full file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-700"
                 />
