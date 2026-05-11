@@ -77,16 +77,26 @@ export function ReflectionTimeline() {
         ) : null}
 
         {reflections.map(reflection => (
-          <button
+          <article
             key={reflection.id}
-            type="button"
+            role="button"
+            tabIndex={0}
             onClick={() => {
               setSelectedReflectionId(reflection.id);
               setNoteText("");
               setNoteStatus("idle");
               setNoteError("");
             }}
-            className="w-full overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-[0_10px_26px_rgba(15,23,42,0.07)]"
+            onKeyDown={event => {
+              if (event.key === "Enter" || event.key === " ") {
+                event.preventDefault();
+                setSelectedReflectionId(reflection.id);
+                setNoteText("");
+                setNoteStatus("idle");
+                setNoteError("");
+              }
+            }}
+            className="w-full cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-[0_10px_26px_rgba(15,23,42,0.07)]"
           >
             {reflection.images?.length ? (
               <div className="grid grid-cols-2 gap-[1px] bg-slate-200 sm:grid-cols-3">
@@ -122,7 +132,7 @@ export function ReflectionTimeline() {
                 {formatDate(reflection)}
               </p>
             </div>
-          </button>
+          </article>
         ))}
       </div>
 
