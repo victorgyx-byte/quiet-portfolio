@@ -9,14 +9,24 @@ export function StudentDashboard() {
 
   return (
     <div className="space-y-4">
-      <section className="rounded-3xl bg-ink p-5 text-white shadow-soft">
-        <p className="text-xs font-semibold uppercase tracking-[0.16em] text-white/55">
-          Reflection Space
+      <section className="glass-card rounded-3xl p-5 shadow-soft">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink/45">
+          Your Space
         </p>
-        <h1 className="mt-2 text-2xl font-bold sm:text-3xl">Hi {firstName}, what shifted today?</h1>
-        <p className="mt-2 max-w-2xl text-sm leading-6 text-white/72">
-          Add one short reflection. Keep it private, or share when you are ready.
+        <h1 className="mt-2 text-2xl font-bold text-ink sm:text-3xl">
+          Hey {firstName}, what stuck with you today?
+        </h1>
+        <p className="mt-2 max-w-2xl text-sm leading-6 text-ink/68">
+          Snap a quick thought, add context later, and build your story over time.
         </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          <span className="rounded-full bg-[#eef3ff] px-3 py-1 text-xs font-semibold text-[#395cc7]">
+            Private by default
+          </span>
+          <span className="rounded-full bg-[#ecfff9] px-3 py-1 text-xs font-semibold text-[#177f68]">
+            Feedback when ready
+          </span>
+        </div>
       </section>
       <div id="compose" className="scroll-mt-24">
         <ReflectionForm />

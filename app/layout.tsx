@@ -1,6 +1,17 @@
 import type { Metadata } from "next";
+import { Nunito, Space_Grotesk } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/auth-provider";
+
+const nunito = Nunito({
+  subsets: ["latin"],
+  variable: "--font-body"
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-display"
+});
 
 export const metadata: Metadata = {
   title: "Student's Companion",
@@ -14,7 +25,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
+      <body className={`${nunito.variable} ${spaceGrotesk.variable}`}>
         <AuthProvider>{children}</AuthProvider>
       </body>
     </html>

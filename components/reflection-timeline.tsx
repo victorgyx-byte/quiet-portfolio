@@ -31,11 +31,11 @@ export function ReflectionTimeline() {
   }, [user]);
 
   return (
-    <section className="rounded-3xl border border-white/80 bg-white/70 p-4 shadow-soft backdrop-blur sm:p-5">
+    <section className="glass-card rounded-3xl p-4 shadow-soft sm:p-5">
       <div className="flex items-end justify-between gap-3">
         <div>
           <h2 className="text-xl font-bold text-ink sm:text-2xl">Timeline</h2>
-          <p className="mt-1 text-sm text-ink/62">Your reflection feed in reverse order.</p>
+          <p className="mt-1 text-sm text-ink/62">Your moments, newest first.</p>
         </div>
         <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-ink/60">
           {reflections.length} saved
@@ -58,7 +58,7 @@ export function ReflectionTimeline() {
         {reflections.map(reflection => (
           <article
             key={reflection.id}
-            className="overflow-hidden rounded-2xl border border-ink/10 bg-white"
+            className="overflow-hidden rounded-2xl border border-ink/10 bg-white shadow-[0_8px_24px_rgba(35,50,58,0.06)]"
           >
             {reflection.images?.length ? (
               <div className="grid grid-cols-2 gap-[1px] bg-ink/10 sm:grid-cols-3">
@@ -82,13 +82,13 @@ export function ReflectionTimeline() {
             ) : null}
             <div className="p-4">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="rounded-full bg-skywash px-3 py-1 text-xs font-semibold text-moss">
+                <span className="rounded-full bg-[#eef3ff] px-3 py-1 text-xs font-semibold text-[#395cc7]">
                   {reflection.competency}
                 </span>
-                <span className="rounded-full bg-oat px-3 py-1 text-xs font-semibold text-clay">
+                <span className="rounded-full bg-[#fff3e9] px-3 py-1 text-xs font-semibold text-[#bc664f]">
                   {reflection.category}
                 </span>
-                <span className="rounded-full bg-mist px-3 py-1 text-xs font-semibold text-ink/56">
+                <span className="rounded-full bg-[#f4f8fb] px-3 py-1 text-xs font-semibold text-ink/56">
                   {reflection.visibility === "private" ? "Private" : "Shared"}
                 </span>
               </div>

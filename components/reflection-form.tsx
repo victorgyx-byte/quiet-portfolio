@@ -156,7 +156,7 @@ export function ReflectionForm() {
   return (
     <form
       onSubmit={handleSave}
-      className="rounded-3xl border border-white/80 bg-white/88 p-4 shadow-soft backdrop-blur sm:p-5"
+      className="glass-card rounded-3xl p-4 shadow-soft sm:p-5"
     >
       <div className="mb-4 flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink/50">
@@ -178,7 +178,7 @@ export function ReflectionForm() {
         <div className="space-y-4">
           <h2 className="text-2xl font-bold text-ink">Saved to timeline</h2>
           <p className="text-sm leading-6 text-ink/68">
-            Your reflection has been captured successfully.
+            Nice one. Your moment is now part of your growth story.
           </p>
           <div className="grid gap-2 sm:grid-cols-2">
             <Link
@@ -220,7 +220,7 @@ export function ReflectionForm() {
               </label>
 
               <label className="block">
-                <span className="text-sm font-semibold text-ink">Photo (optional)</span>
+                <span className="text-sm font-semibold text-ink">Photo drop (optional)</span>
                 <input
                   type="file"
                   accept="image/*"
@@ -269,7 +269,7 @@ export function ReflectionForm() {
                   What made this important?
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-ink/62">
-                  What did you notice, what helped, what can you do from here?
+                  What did you notice, what helped, and what might you do next?
                 </p>
               </div>
               <textarea
@@ -312,7 +312,7 @@ export function ReflectionForm() {
                   What kind of growth does this show?
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-ink/62">
-                  Choose one that feels closest, then pick context.
+                  Pick the one that fits best, then choose context.
                 </p>
               </div>
 
@@ -380,7 +380,7 @@ export function ReflectionForm() {
               <div>
                 <h2 className="text-xl font-bold text-ink sm:text-2xl">Who should see this?</h2>
                 <p className="mt-1 text-sm leading-6 text-ink/62">
-                  Sharing with teachers can help you get feedback and guidance. You can
+                  Sharing with teachers can help you get ideas and guidance. You can
                   keep this private if you prefer.
                 </p>
               </div>
