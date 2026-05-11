@@ -11,6 +11,49 @@ const links = [
   { href: "/teacher", label: "Teacher" }
 ];
 
+function NavIcon({ href, active }: { href: string; active: boolean }) {
+  const stroke = active ? "#ffffff" : "#4d5f65";
+  const common = {
+    fill: "none",
+    stroke,
+    strokeWidth: 1.9,
+    strokeLinecap: "round" as const,
+    strokeLinejoin: "round" as const
+  };
+
+  if (href === "/dashboard") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+        <path {...common} d="M3 12l9-8 9 8" />
+        <path {...common} d="M6 10v10h12V10" />
+      </svg>
+    );
+  }
+  if (href === "/timeline") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+        <path {...common} d="M5 7h14M5 12h9M5 17h12" />
+        <circle cx="18.5" cy="12" r="1.2" fill={stroke} />
+      </svg>
+    );
+  }
+  if (href === "/portfolio") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+        <rect {...common} x="4" y="3.5" width="16" height="17" rx="2.4" />
+        <path {...common} d="M8 8h8M8 12h8M8 16h5" />
+      </svg>
+    );
+  }
+
+  return (
+    <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+      <circle {...common} cx="12" cy="8" r="3.2" />
+      <path {...common} d="M5 20c1.6-3 4.1-4.5 7-4.5s5.4 1.5 7 4.5" />
+    </svg>
+  );
+}
+
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, signOut, isTeacher } = useAuth();
@@ -74,10 +117,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`rounded-xl px-2 py-2 text-center text-xs font-semibold ${
+                className={`flex min-h-14 flex-col items-center justify-center gap-1 rounded-xl px-2 py-1 text-center text-[11px] font-semibold ${
                   isActive ? "bg-ink text-white" : "bg-white text-ink/70"
                 }`}
               >
+                <NavIcon href={link.href} active={isActive} />
                 {link.label}
               </Link>
             );
