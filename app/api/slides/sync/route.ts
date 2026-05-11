@@ -65,7 +65,7 @@ async function addCoverSlide(
 ) {
   const coverSlideId = "cover_slide";
   const coverTitleId = "cover_title";
-  const coverSubtitleId = "cover_subtitle";
+  const coverBodyId = "cover_body";
   const subtitle = payload.portfolio.growthStatement.trim() || "Learning reflection";
 
   const requests: Record<string, unknown>[] = [
@@ -73,15 +73,15 @@ async function addCoverSlide(
       createSlide: {
         objectId: coverSlideId,
         insertionIndex: 0,
-        slideLayoutReference: { predefinedLayout: "TITLE" },
+        slideLayoutReference: { predefinedLayout: "TITLE_AND_BODY" },
         placeholderIdMappings: [
           {
             layoutPlaceholder: { type: "TITLE", index: 0 },
             objectId: coverTitleId
           },
           {
-            layoutPlaceholder: { type: "SUBTITLE", index: 0 },
-            objectId: coverSubtitleId
+            layoutPlaceholder: { type: "BODY", index: 0 },
+            objectId: coverBodyId
           }
         ]
       }
@@ -95,7 +95,7 @@ async function addCoverSlide(
     },
     {
       insertText: {
-        objectId: coverSubtitleId,
+        objectId: coverBodyId,
         insertionIndex: 0,
         text: `${payload.student.name}\n\n${subtitle}`
       }
