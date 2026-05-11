@@ -55,7 +55,7 @@ export function ReflectionTimeline() {
     <section className="glass-card rounded-3xl p-4 shadow-soft sm:p-5">
       <div className="flex items-end justify-between gap-3">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Timeline</h2>
+          <h2 className="display-title">Timeline</h2>
           <p className="mt-1 text-sm text-slate-500">Your moments, newest first.</p>
         </div>
         <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">

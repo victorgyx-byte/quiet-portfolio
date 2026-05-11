@@ -201,7 +201,7 @@ export function PortfolioBuilder() {
     <section className="glass-card rounded-3xl p-5 shadow-soft">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-slate-900">Portfolio Builder</h2>
+          <h2 className="display-title">Portfolio Builder</h2>
           <p className="mt-1 text-sm text-slate-500">
             Select reflections and export a submission-ready PDF.
           </p>

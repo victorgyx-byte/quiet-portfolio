@@ -176,7 +176,7 @@ export function ReflectionForm() {
 
       {status === "saved" ? (
         <div className="space-y-4">
-          <h2 className="text-2xl font-bold text-slate-900">Saved to timeline</h2>
+          <h2 className="display-title">Saved to timeline</h2>
           <p className="text-sm leading-6 text-slate-600">
             Nice one. Your moment is now part of your growth story.
           </p>
@@ -201,7 +201,7 @@ export function ReflectionForm() {
           {step === 1 ? (
             <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
+                <h2 className="display-title">
                   What stayed with you today?
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
@@ -265,7 +265,7 @@ export function ReflectionForm() {
           {step === 2 ? (
             <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
+                <h2 className="display-title">
                   What made this important?
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
@@ -308,7 +308,7 @@ export function ReflectionForm() {
           {step === 3 ? (
             <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">
+                <h2 className="display-title">
                   What kind of growth does this show?
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
@@ -378,7 +378,7 @@ export function ReflectionForm() {
           {step === 4 ? (
             <div className="space-y-4">
               <div>
-                <h2 className="text-xl font-bold text-slate-900 sm:text-2xl">Who should see this?</h2>
+                <h2 className="display-title">Who should see this?</h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
                   Sharing with teachers can help you get ideas and guidance. You can
                   keep this private if you prefer.

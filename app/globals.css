@@ -38,6 +38,21 @@ h4 {
   font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
 }
 
+.display-title {
+  font-family: var(--font-display), ui-sans-serif, system-ui, sans-serif;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0;
+  color: #0f172a;
+}
+
+@media (min-width: 640px) {
+  .display-title {
+    font-size: 1.5rem;
+  }
+}
+
 button,
 input,
 textarea,
