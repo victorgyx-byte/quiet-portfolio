@@ -156,7 +156,7 @@ export function ReflectionForm() {
   return (
     <form
       onSubmit={handleSave}
-      className="glass-card rounded-3xl p-4 shadow-soft sm:p-5"
+      className="rounded-3xl border border-blue-200/80 bg-blue-50/85 p-4 shadow-soft backdrop-blur sm:p-5"
     >
       <div className="mb-4 flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
