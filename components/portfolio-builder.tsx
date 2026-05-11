@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { subscribeToStudentReflections } from "@/lib/reflections";
 import type { Reflection } from "@/types/reflection";
@@ -57,6 +59,7 @@ function getImageSize(dataUrl: string) {
 
 export function PortfolioBuilder() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
   const [reflections, setReflections] = useState<Reflection[]>([]);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [title, setTitle] = useState("My Learning Portfolio");
@@ -75,6 +78,7 @@ export function PortfolioBuilder() {
     () => reflections.filter(reflection => selectedIds.includes(reflection.id)),
     [reflections, selectedIds]
   );
+  const googleConnectStatus = searchParams.get("google_connect");
 
   function toggleReflection(id: string) {
     setSelectedIds(current =>
@@ -299,15 +303,44 @@ export function PortfolioBuilder() {
             Select reflections and export a submission-ready PDF.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={exportToPdf}
-          disabled={selectedReflections.length === 0}
-          className="btn-primary w-auto rounded-full px-4 disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          Export PDF ({selectedReflections.length})
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/api/google/connect"
+            className="btn-secondary inline-flex w-auto items-center rounded-full px-4"
+          >
+            Connect Google Drive
+          </Link>
+          <button
+            type="button"
+            onClick={exportToPdf}
+            disabled={selectedReflections.length === 0}
+            className="btn-primary w-auto rounded-full px-4 disabled:cursor-not-allowed disabled:opacity-45"
+          >
+            Export PDF ({selectedReflections.length})
+          </button>
+        </div>
       </div>
+      {googleConnectStatus === "success" ? (
+        <p className="mt-3 rounded-xl bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-700">
+          Google account connected successfully. Stage 3 can now create and update
+          Slides.
+        </p>
+      ) : null}
+      {googleConnectStatus === "invalid_state" ? (
+        <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
+          Google connect was interrupted. Please try again.
+        </p>
+      ) : null}
+      {googleConnectStatus === "token_error" || googleConnectStatus === "request_failed" ? (
+        <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
+          Google token exchange failed. Check OAuth settings and try again.
+        </p>
+      ) : null}
+      {googleConnectStatus === "env_missing" ? (
+        <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
+          Missing Google OAuth environment variables.
+        </p>
+      ) : null}
       {exportHint ? (
         <p className="mt-3 rounded-xl bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-700">
           {exportHint}
