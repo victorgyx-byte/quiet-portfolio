@@ -124,7 +124,6 @@ async function appendReflectionSlide(
   const slideId = safeId("slide", reflection.reflectionId);
   const titleShapeId = safeId("title", reflection.reflectionId);
   const bodyShapeId = safeId("body", reflection.reflectionId);
-  const imageId = safeId("img", reflection.reflectionId);
 
   const bodyText = `${reflection.body}\n\n${reflection.competency} | ${reflection.category} | ${reflection.createdAt || "Recent"}`;
 
@@ -161,27 +160,60 @@ async function appendReflectionSlide(
     }
   ];
 
-  const firstImage = reflection.images?.[0];
-  if (firstImage?.url) {
-    requests.push({
-      createImage: {
-        objectId: imageId,
-        url: firstImage.url,
-        elementProperties: {
-          pageObjectId: slideId,
-          size: {
-            width: { magnitude: 2800000, unit: "EMU" },
-            height: { magnitude: 1800000, unit: "EMU" }
-          },
-          transform: {
-            scaleX: 1,
-            scaleY: 1,
-            translateX: 3500000,
-            translateY: 2600000,
-            unit: "EMU"
+  const images = (reflection.images ?? []).slice(0, 5);
+  if (images.length > 0) {
+    const slotsByCount: Array<{ x: number; y: number; w: number; h: number }> =
+      images.length === 1
+        ? [{ x: 3500000, y: 2500000, w: 4200000, h: 2300000 }]
+        : images.length === 2
+          ? [
+              { x: 3500000, y: 2100000, w: 2000000, h: 2000000 },
+              { x: 5700000, y: 2100000, w: 2000000, h: 2000000 }
+            ]
+          : images.length === 3
+            ? [
+                { x: 3500000, y: 1800000, w: 2000000, h: 1600000 },
+                { x: 5700000, y: 1800000, w: 2000000, h: 1600000 },
+                { x: 4600000, y: 3600000, w: 2000000, h: 1600000 }
+              ]
+            : images.length === 4
+              ? [
+                  { x: 3500000, y: 1700000, w: 2000000, h: 1500000 },
+                  { x: 5700000, y: 1700000, w: 2000000, h: 1500000 },
+                  { x: 3500000, y: 3400000, w: 2000000, h: 1500000 },
+                  { x: 5700000, y: 3400000, w: 2000000, h: 1500000 }
+                ]
+              : [
+                  { x: 3500000, y: 1500000, w: 2000000, h: 1300000 },
+                  { x: 5700000, y: 1500000, w: 2000000, h: 1300000 },
+                  { x: 3500000, y: 3000000, w: 2000000, h: 1300000 },
+                  { x: 5700000, y: 3000000, w: 2000000, h: 1300000 },
+                  { x: 4600000, y: 4500000, w: 2000000, h: 1300000 }
+                ];
+
+    images.forEach((image, index) => {
+      const slot = slotsByCount[index];
+      if (!slot?.w || !slot?.h) return;
+      requests.push({
+        createImage: {
+          objectId: safeId(`img${index}`, reflection.reflectionId),
+          url: image.url,
+          elementProperties: {
+            pageObjectId: slideId,
+            size: {
+              width: { magnitude: slot.w, unit: "EMU" },
+              height: { magnitude: slot.h, unit: "EMU" }
+            },
+            transform: {
+              scaleX: 1,
+              scaleY: 1,
+              translateX: slot.x,
+              translateY: slot.y,
+              unit: "EMU"
+            }
           }
         }
-      }
+      });
     });
   }
 
