@@ -9,6 +9,11 @@ export type ReflectionImage = {
 
 export type ReflectionVisibility = "private" | "shared_with_teacher";
 
+export type FollowUpNote = {
+  text: string;
+  createdAt: string;
+};
+
 export type Reflection = {
   id: string;
   userId: string;
@@ -20,6 +25,7 @@ export type Reflection = {
   competency: string;
   visibility: ReflectionVisibility;
   images: ReflectionImage[];
+  followUpNotes?: FollowUpNote[];
   createdAt?: Timestamp;
 };
 
