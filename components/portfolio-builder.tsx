@@ -198,11 +198,11 @@ export function PortfolioBuilder() {
   }
 
   return (
-    <section className="rounded-3xl border border-white/80 bg-white/74 p-5 shadow-soft backdrop-blur">
+    <section className="glass-card rounded-3xl p-5 shadow-soft">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
-          <h2 className="text-2xl font-bold text-ink">Portfolio Builder</h2>
-          <p className="mt-1 text-sm text-ink/62">
+          <h2 className="text-2xl font-bold text-slate-900">Portfolio Builder</h2>
+          <p className="mt-1 text-sm text-slate-500">
             Select reflections and export a submission-ready PDF.
           </p>
         </div>
@@ -216,54 +216,54 @@ export function PortfolioBuilder() {
         </button>
       </div>
       {exportHint ? (
-        <p className="mt-3 rounded-xl bg-skywash px-3 py-2 text-sm font-semibold text-moss">
+        <p className="mt-3 rounded-xl bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-700">
           {exportHint}
         </p>
       ) : null}
 
       <div className="mt-4 grid gap-4 lg:grid-cols-[0.95fr_1.05fr]">
-        <div className="space-y-3 rounded-2xl border border-ink/10 bg-mist p-4">
+        <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-4">
           <label className="block">
-            <span className="text-sm font-semibold text-ink">Portfolio title</span>
+            <span className="text-sm font-semibold text-slate-800">Portfolio title</span>
             <input
               value={title}
               onChange={event => setTitle(event.target.value)}
-              className="mt-2 min-h-11 w-full rounded-xl border border-ink/10 bg-white px-3 text-sm outline-none focus:border-moss"
+              className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500"
             />
           </label>
           <label className="block">
-            <span className="text-sm font-semibold text-ink">Growth statement</span>
+            <span className="text-sm font-semibold text-slate-800">Growth statement</span>
             <textarea
               value={growthStatement}
               onChange={event => setGrowthStatement(event.target.value)}
               rows={5}
-              className="mt-2 w-full rounded-xl border border-ink/10 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-moss"
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-blue-500"
             />
           </label>
           <div>
-            <p className="text-sm font-semibold text-ink">Select reflections</p>
+            <p className="text-sm font-semibold text-slate-800">Select reflections</p>
             <div className="mt-2 max-h-72 space-y-2 overflow-auto pr-1">
               {reflections.map(reflection => (
                 <label
                   key={reflection.id}
-                  className="flex cursor-pointer items-start gap-3 rounded-xl border border-ink/10 bg-white px-3 py-2"
+                  className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-white px-3 py-2"
                 >
                   <input
                     type="checkbox"
                     checked={selectedIds.includes(reflection.id)}
                     onChange={() => toggleReflection(reflection.id)}
-                    className="mt-1 size-4 accent-moss"
+                    className="mt-1 size-4 accent-blue-600"
                   />
                   <span>
-                    <span className="block text-sm font-semibold text-ink">
+                    <span className="block text-sm font-semibold text-slate-900">
                       {reflection.title}
                     </span>
-                    <span className="text-xs text-ink/58">{formatDate(reflection)}</span>
+                    <span className="text-xs text-slate-500">{formatDate(reflection)}</span>
                   </span>
                 </label>
               ))}
               {reflections.length === 0 ? (
-                <p className="rounded-xl bg-white px-3 py-4 text-sm text-ink/60">
+                <p className="rounded-xl bg-white px-3 py-4 text-sm text-slate-500">
                   Add reflections first, then return here to build your portfolio.
                 </p>
               ) : null}
@@ -271,37 +271,37 @@ export function PortfolioBuilder() {
           </div>
         </div>
 
-        <div className="rounded-2xl border border-ink/10 bg-white p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink/45">
+        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
             Preview
           </p>
-          <h3 className="mt-2 text-2xl font-bold text-ink">
+          <h3 className="mt-2 text-2xl font-bold text-slate-900">
             {title.trim() || "My Learning Portfolio"}
           </h3>
-          <p className="mt-1 text-sm text-ink/58">{user?.displayName ?? "Student"}</p>
-          <p className="mt-4 whitespace-pre-line text-sm leading-6 text-ink/72">
+          <p className="mt-1 text-sm text-slate-500">{user?.displayName ?? "Student"}</p>
+          <p className="mt-4 whitespace-pre-line text-sm leading-6 text-slate-600">
             {growthStatement.trim() || "Write a growth statement for this submission."}
           </p>
 
           <div className="mt-5 space-y-3">
             {selectedReflections.map(reflection => (
-              <article key={reflection.id} className="rounded-xl border border-ink/10 p-3">
+              <article key={reflection.id} className="rounded-xl border border-slate-200 p-3">
                 <div className="flex flex-wrap gap-2">
-                  <span className="rounded-full bg-skywash px-2 py-1 text-xs font-semibold text-moss">
+                  <span className="rounded-full bg-blue-50 px-2 py-1 text-xs font-semibold text-blue-700">
                     {reflection.competency}
                   </span>
-                  <span className="rounded-full bg-oat px-2 py-1 text-xs font-semibold text-clay">
+                  <span className="rounded-full bg-rose-50 px-2 py-1 text-xs font-semibold text-rose-700">
                     {reflection.category}
                   </span>
                 </div>
-                <h4 className="mt-2 text-sm font-bold text-ink">{reflection.title}</h4>
-                <p className="mt-1 max-h-[7.2rem] overflow-hidden text-sm leading-6 text-ink/72">
+                <h4 className="mt-2 text-sm font-bold text-slate-900">{reflection.title}</h4>
+                <p className="mt-1 max-h-[7.2rem] overflow-hidden text-sm leading-6 text-slate-600">
                   {reflection.body}
                 </p>
               </article>
             ))}
             {selectedReflections.length === 0 ? (
-              <p className="rounded-xl bg-mist px-3 py-4 text-sm text-ink/60">
+              <p className="rounded-xl bg-slate-50 px-3 py-4 text-sm text-slate-500">
                 Select reflections to preview your portfolio.
               </p>
             ) : null}

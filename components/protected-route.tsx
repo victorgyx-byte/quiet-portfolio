@@ -16,7 +16,7 @@ export function ProtectedRoute({
   if (loading) {
     return (
       <div className="grid min-h-[60vh] place-items-center">
-        <div className="h-12 w-12 animate-pulse rounded-full bg-sage/30" />
+        <div className="h-12 w-12 animate-pulse rounded-full bg-blue-200/60" />
       </div>
     );
   }
@@ -25,11 +25,11 @@ export function ProtectedRoute({
     return (
       <div className="mx-auto grid min-h-[65vh] max-w-md place-items-center text-center">
         <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.18em] text-clay">
+          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
             Sign in
           </p>
-          <h1 className="mt-3 text-3xl font-bold text-ink">Your portfolio is private.</h1>
-          <p className="mt-3 text-sm leading-6 text-ink/65">
+          <h1 className="mt-3 text-3xl font-bold text-slate-900">Your portfolio is private.</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
             Use your school Google account to open your reflection space.
           </p>
           <div className="mt-6">
@@ -44,14 +44,14 @@ export function ProtectedRoute({
     return (
       <div className="mx-auto grid min-h-[65vh] max-w-md place-items-center text-center">
         <div>
-          <h1 className="text-3xl font-bold text-ink">Teacher access is limited.</h1>
-          <p className="mt-3 text-sm leading-6 text-ink/65">
+          <h1 className="text-3xl font-bold text-slate-900">Teacher access is limited.</h1>
+          <p className="mt-3 text-sm leading-6 text-slate-600">
             Your student dashboard is ready, and this view is reserved for teacher
             accounts configured in the app.
           </p>
           <Link
             href="/dashboard"
-            className="mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-ink px-5 py-3 text-sm font-semibold text-white"
+            className="mt-6 inline-flex min-h-12 items-center justify-center rounded-full bg-slate-900 px-5 py-3 text-sm font-semibold text-white"
           >
             Go to reflections
           </Link>
