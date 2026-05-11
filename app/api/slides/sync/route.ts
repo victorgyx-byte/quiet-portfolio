@@ -48,7 +48,7 @@ async function createDeck(token: string, title: string) {
     body: JSON.stringify({ title })
   });
   if (!response.ok) {
-    throw new Error("Could not create Google Slides deck.");
+    throw new Error("We couldn't create your Google Slides deck yet. Please try again.");
   }
   const data = (await response.json()) as { presentationId: string };
   return {
@@ -136,7 +136,7 @@ async function appendReflectionSlide(
   );
 
   if (!batchResponse.ok) {
-    throw new Error(`Could not append slide for reflection ${reflection.reflectionId}.`);
+    throw new Error("We couldn't add one of your reflections to Slides. Please try again.");
   }
 
   const mapEntry: SlidesReflectionMapEntry = {
@@ -155,7 +155,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           ok: false,
-          message: "Google connection expired. Reconnect Google Drive first."
+          message: "Your Google connection has expired. Please reconnect Google Drive first."
         },
         { status: 401 }
       );
@@ -166,7 +166,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           ok: false,
-          message: "Invalid slides sync payload."
+          message: "We couldn't read this sync request. Please try again."
         },
         { status: 400 }
       );

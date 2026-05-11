@@ -155,7 +155,7 @@ export function PortfolioBuilder() {
 
     const payload = buildSlidesPayload();
     if (!payload) {
-      setSlidesHint("Could not build payload. Please sign in again.");
+      setSlidesHint("We couldn't prepare your reflections. Please sign in again.");
       return;
     }
 
@@ -176,7 +176,7 @@ export function PortfolioBuilder() {
       };
 
       if (!response.ok || !data.ok || !data.integration) {
-        setSlidesHint(data.message || "Slides sync failed.");
+        setSlidesHint(data.message || "We couldn't sync to Google Slides. Please try again.");
         return;
       }
 
@@ -184,7 +184,7 @@ export function PortfolioBuilder() {
       await saveSlidesIntegration(user.uid, data.integration);
       setSlidesHint(data.message);
     } catch {
-      setSlidesHint("Could not reach Google Slides sync endpoint.");
+      setSlidesHint("We couldn't reach Google Slides right now. Please try again.");
     } finally {
       setIsSyncingSlides(false);
     }
@@ -322,10 +322,25 @@ export function PortfolioBuilder() {
           type="button"
           onClick={exportToPdf}
           disabled={selectedReflections.length === 0}
-          className="btn-primary w-full rounded-2xl disabled:cursor-not-allowed disabled:opacity-45"
+          className="btn-secondary w-full rounded-2xl disabled:cursor-not-allowed disabled:opacity-45"
         >
           Export PDF ({selectedReflections.length})
         </button>
+        <button
+          type="button"
+          onClick={syncToGoogleSlides}
+          disabled={selectedReflections.length === 0 || isSyncingSlides}
+          className="btn-primary w-full rounded-2xl disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          {isSyncingSlides
+            ? "Syncing to Google Slides..."
+            : "Sync to My Google Slides Deck"}
+        </button>
+      </div>
+      <p className="mt-2 text-sm text-slate-500">
+        First time using Slides? Connect Google Drive once before syncing.
+      </p>
+      <div className="mt-2">
         <Link
           href="/api/google/connect"
           className="btn-secondary inline-flex w-full items-center justify-center rounded-2xl"
@@ -333,41 +348,24 @@ export function PortfolioBuilder() {
           Connect Google Drive
         </Link>
       </div>
-      <p className="mt-2 text-sm text-slate-500">
-        First time using Slides? Connect Google Drive once, then sync selected
-        reflections.
-      </p>
-      <div className="mt-2">
-          <button
-            type="button"
-            onClick={syncToGoogleSlides}
-            disabled={selectedReflections.length === 0 || isSyncingSlides}
-            className="btn-secondary w-full rounded-2xl disabled:cursor-not-allowed disabled:opacity-45"
-          >
-            {isSyncingSlides
-              ? "Syncing to Google Slides..."
-              : "Sync to My Google Slides Deck"}
-          </button>
-      </div>
       {googleConnectStatus === "success" ? (
         <p className="mt-3 rounded-xl bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-700">
-          Google account connected successfully. Stage 3 can now create and update
-          Slides.
+          Google Drive connected. You can now sync selected reflections to your Slides deck.
         </p>
       ) : null}
       {googleConnectStatus === "invalid_state" ? (
         <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
-          Google connect was interrupted. Please try again.
+          The Google connection was interrupted. Please try again.
         </p>
       ) : null}
       {googleConnectStatus === "token_error" || googleConnectStatus === "request_failed" ? (
         <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
-          Google token exchange failed. Check OAuth settings and try again.
+          We couldn't complete Google connection. Please reconnect and try again.
         </p>
       ) : null}
       {googleConnectStatus === "env_missing" ? (
         <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
-          Missing Google OAuth environment variables.
+          Google setup is incomplete. Ask your teacher/admin to finish app settings.
         </p>
       ) : null}
       {exportHint ? (
