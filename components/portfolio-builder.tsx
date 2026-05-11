@@ -317,12 +317,12 @@ export function PortfolioBuilder() {
           </p>
         </div>
       </div>
-      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+      <div className="mt-3 hidden gap-2 sm:grid sm:grid-cols-2">
         <button
           type="button"
           onClick={exportToPdf}
           disabled={selectedReflections.length === 0}
-          className="btn-secondary w-full rounded-2xl disabled:cursor-not-allowed disabled:opacity-45"
+          className="btn-primary w-full rounded-2xl disabled:cursor-not-allowed disabled:opacity-45"
         >
           Export PDF ({selectedReflections.length})
         </button>
@@ -337,10 +337,10 @@ export function PortfolioBuilder() {
             : "Sync to My Google Slides Deck"}
         </button>
       </div>
-      <p className="mt-2 text-sm text-slate-500">
+      <p className="mt-2 hidden text-sm text-slate-500 sm:block">
         First time using Slides? Connect Google Drive once before syncing.
       </p>
-      <div className="mt-2">
+      <div className="mt-2 hidden sm:block">
         <Link
           href="/api/google/connect"
           className="btn-secondary inline-flex w-full items-center justify-center rounded-2xl"
@@ -440,6 +440,38 @@ export function PortfolioBuilder() {
               ) : null}
             </div>
           </div>
+        </div>
+
+        <div className="space-y-2 sm:hidden">
+          <div className="grid gap-2">
+            <button
+              type="button"
+              onClick={exportToPdf}
+              disabled={selectedReflections.length === 0}
+              className="btn-primary w-full rounded-2xl disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              Export PDF ({selectedReflections.length})
+            </button>
+            <button
+              type="button"
+              onClick={syncToGoogleSlides}
+              disabled={selectedReflections.length === 0 || isSyncingSlides}
+              className="btn-primary w-full rounded-2xl disabled:cursor-not-allowed disabled:opacity-45"
+            >
+              {isSyncingSlides
+                ? "Syncing to Google Slides..."
+                : "Sync to My Google Slides Deck"}
+            </button>
+          </div>
+          <p className="text-sm text-slate-500">
+            First time using Slides? Connect Google Drive once before syncing.
+          </p>
+          <Link
+            href="/api/google/connect"
+            className="btn-secondary inline-flex w-full items-center justify-center rounded-2xl"
+          >
+            Connect Google Drive
+          </Link>
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
