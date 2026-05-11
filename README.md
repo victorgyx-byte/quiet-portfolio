@@ -11,6 +11,7 @@ A mobile-first student portfolio MVP for secondary school reflections, built wit
 - Optional image upload in reflections
 - Student reflection timeline in its own tab
 - Portfolio builder with reflection selection and PDF export
+- Stage 1 Google Slides prep (JSON export + payload validation mock endpoint)
 - Basic teacher dashboard for reflections students choose to share
 - Firestore rules starter file
 
@@ -52,8 +53,7 @@ A mobile-first student portfolio MVP for secondary school reflections, built wit
 - `components/app-shell.tsx` provides the logged-in navigation frame.
 - `components/landing-page.tsx` contains the public first screen.
 - `components/student-dashboard.tsx` composes the student reflection page.
-- `components/portfolio-builder.tsx` builds a submission-ready portfolio and exports it with browser Print to PDF.
-- `components/reflection-form.tsx` saves new reflections to Firestore.
+- `components/portfolio-builder.tsx` builds a submission-ready portfolio, exports PDF, and provides Slides-ready JSON export + mock validation.
 - `components/reflection-form.tsx` saves reflections and uploads optional images to Firebase Storage.
 - `components/reflection-timeline.tsx` subscribes to a student's own reflections.
 - `components/teacher-dashboard.tsx` subscribes to shared reflections.
@@ -61,6 +61,8 @@ A mobile-first student portfolio MVP for secondary school reflections, built wit
 - `lib/storage.ts` compresses and uploads reflection images.
 - `lib/reflections.ts` contains Firestore create and realtime subscription helpers.
 - `types/reflection.ts` defines reflection data types.
+- `types/slides-export.ts` defines the Stage 1 Google Slides payload contract.
+- `app/api/slides-export/route.ts` validates Slides payload shape in mock mode.
 - `firestore.rules` provides starter privacy rules for student-owned reflections.
 - `storage.rules` restricts image files to each student's own upload folder.
 - `firebase.json` tells Firebase CLI where to find Firestore rules and indexes.

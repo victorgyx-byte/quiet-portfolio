@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { subscribeToStudentReflections } from "@/lib/reflections";
 import type { Reflection } from "@/types/reflection";
+import type { SlidesExportPayload } from "@/types/slides-export";
 
 function formatDate(reflection: Reflection) {
   const date = reflection.createdAt?.toDate();
@@ -63,6 +64,7 @@ export function PortfolioBuilder() {
     "Over this period, I became more intentional about my learning choices and reflected on how I respond to feedback, collaboration, and challenges."
   );
   const [exportHint, setExportHint] = useState("");
+  const [slidesHint, setSlidesHint] = useState("");
 
   useEffect(() => {
     if (!user) return;
@@ -78,6 +80,97 @@ export function PortfolioBuilder() {
     setSelectedIds(current =>
       current.includes(id) ? current.filter(item => item !== id) : [...current, id]
     );
+  }
+
+  function buildSlidesPayload(): SlidesExportPayload | null {
+    if (!user) return null;
+
+    return {
+      version: "slides-export-v1",
+      generatedAt: new Date().toISOString(),
+      student: {
+        uid: user.uid,
+        name: user.displayName ?? "Student",
+        email: user.email ?? ""
+      },
+      portfolio: {
+        title: title.trim() || "My Learning Portfolio",
+        growthStatement: growthStatement.trim() || ""
+      },
+      reflections: selectedReflections.map(reflection => ({
+        reflectionId: reflection.id,
+        title: reflection.title,
+        body: reflection.body,
+        competency: reflection.competency,
+        category: reflection.category,
+        visibility: reflection.visibility,
+        createdAt: reflection.createdAt?.toDate().toISOString() ?? "",
+        images: reflection.images ?? []
+      }))
+    };
+  }
+
+  function exportSlidesJson() {
+    setSlidesHint("");
+    if (selectedReflections.length === 0) {
+      setSlidesHint("Select at least one reflection first.");
+      return;
+    }
+
+    const payload = buildSlidesPayload();
+    if (!payload) {
+      setSlidesHint("Could not build payload. Please sign in again.");
+      return;
+    }
+
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: "application/json"
+    });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = "slides-export-payload.json";
+    link.click();
+    URL.revokeObjectURL(url);
+    setSlidesHint("Downloaded slides-export-payload.json");
+  }
+
+  async function validateSlidesPayload() {
+    setSlidesHint("");
+    if (selectedReflections.length === 0) {
+      setSlidesHint("Select at least one reflection first.");
+      return;
+    }
+
+    const payload = buildSlidesPayload();
+    if (!payload) {
+      setSlidesHint("Could not build payload. Please sign in again.");
+      return;
+    }
+
+    try {
+      const response = await fetch("/api/slides-export", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify(payload)
+      });
+      const data = (await response.json()) as {
+        ok: boolean;
+        message: string;
+        receivedReflections?: number;
+      };
+
+      if (!response.ok || !data.ok) {
+        setSlidesHint(data.message || "Validation failed.");
+        return;
+      }
+
+      setSlidesHint(
+        `Slides payload validated for ${data.receivedReflections ?? 0} reflection(s).`
+      );
+    } catch {
+      setSlidesHint("Could not reach slides validation endpoint.");
+    }
   }
 
   async function exportToPdf() {
@@ -218,6 +311,29 @@ export function PortfolioBuilder() {
       {exportHint ? (
         <p className="mt-3 rounded-xl bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-700">
           {exportHint}
+        </p>
+      ) : null}
+      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+        <button
+          type="button"
+          onClick={exportSlidesJson}
+          disabled={selectedReflections.length === 0}
+          className="btn-secondary disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          Export Slides JSON
+        </button>
+        <button
+          type="button"
+          onClick={validateSlidesPayload}
+          disabled={selectedReflections.length === 0}
+          className="btn-secondary disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          Validate Slides Payload
+        </button>
+      </div>
+      {slidesHint ? (
+        <p className="mt-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700">
+          {slidesHint}
         </p>
       ) : null}
 
