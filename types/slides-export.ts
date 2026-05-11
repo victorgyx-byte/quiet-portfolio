@@ -28,3 +28,16 @@ export type SlidesExportPayload = {
   };
   reflections: SlidesExportReflection[];
 };
+
+export type SlidesReflectionMapEntry = {
+  slideId: string;
+  titleShapeId: string;
+  bodyShapeId: string;
+};
+
+export type SlidesDeckIntegration = {
+  deckId: string;
+  deckUrl: string;
+  reflectionSlideMap: Record<string, SlidesReflectionMapEntry>;
+  updatedAt?: string;
+};

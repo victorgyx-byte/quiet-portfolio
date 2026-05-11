@@ -5,8 +5,15 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { subscribeToStudentReflections } from "@/lib/reflections";
+import {
+  getSlidesIntegration,
+  saveSlidesIntegration
+} from "@/lib/slides-integration";
 import type { Reflection } from "@/types/reflection";
-import type { SlidesExportPayload } from "@/types/slides-export";
+import type {
+  SlidesDeckIntegration,
+  SlidesExportPayload
+} from "@/types/slides-export";
 
 function formatDate(reflection: Reflection) {
   const date = reflection.createdAt?.toDate();
@@ -68,10 +75,31 @@ export function PortfolioBuilder() {
   );
   const [exportHint, setExportHint] = useState("");
   const [slidesHint, setSlidesHint] = useState("");
+  const [slidesIntegration, setSlidesIntegration] =
+    useState<SlidesDeckIntegration | null>(null);
+  const [isSyncingSlides, setIsSyncingSlides] = useState(false);
 
   useEffect(() => {
     if (!user) return;
     return subscribeToStudentReflections(user.uid, setReflections, () => undefined);
+  }, [user]);
+
+  useEffect(() => {
+    let cancelled = false;
+    if (!user) {
+      setSlidesIntegration(null);
+      return;
+    }
+    getSlidesIntegration(user.uid)
+      .then(integration => {
+        if (!cancelled) setSlidesIntegration(integration);
+      })
+      .catch(() => {
+        if (!cancelled) setSlidesIntegration(null);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
 
   const selectedReflections = useMemo(
@@ -174,6 +202,54 @@ export function PortfolioBuilder() {
       );
     } catch {
       setSlidesHint("Could not reach slides validation endpoint.");
+    }
+  }
+
+  async function syncToGoogleSlides() {
+    setSlidesHint("");
+    if (!user) {
+      setSlidesHint("Please sign in again.");
+      return;
+    }
+    if (selectedReflections.length === 0) {
+      setSlidesHint("Select at least one reflection first.");
+      return;
+    }
+
+    const payload = buildSlidesPayload();
+    if (!payload) {
+      setSlidesHint("Could not build payload. Please sign in again.");
+      return;
+    }
+
+    setIsSyncingSlides(true);
+    try {
+      const response = await fetch("/api/slides/sync", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          payload,
+          integration: slidesIntegration
+        })
+      });
+      const data = (await response.json()) as {
+        ok: boolean;
+        message: string;
+        integration?: SlidesDeckIntegration;
+      };
+
+      if (!response.ok || !data.ok || !data.integration) {
+        setSlidesHint(data.message || "Slides sync failed.");
+        return;
+      }
+
+      setSlidesIntegration(data.integration);
+      await saveSlidesIntegration(user.uid, data.integration);
+      setSlidesHint(data.message);
+    } catch {
+      setSlidesHint("Could not reach Google Slides sync endpoint.");
+    } finally {
+      setIsSyncingSlides(false);
     }
   }
 
@@ -364,9 +440,34 @@ export function PortfolioBuilder() {
           Validate Slides Payload
         </button>
       </div>
+      <div className="mt-2">
+        <button
+          type="button"
+          onClick={syncToGoogleSlides}
+          disabled={selectedReflections.length === 0 || isSyncingSlides}
+          className="btn-primary w-full rounded-2xl disabled:cursor-not-allowed disabled:opacity-45"
+        >
+          {isSyncingSlides
+            ? "Syncing to Google Slides..."
+            : "Sync to My Google Slides Deck"}
+        </button>
+      </div>
       {slidesHint ? (
         <p className="mt-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700">
           {slidesHint}
+        </p>
+      ) : null}
+      {slidesIntegration?.deckUrl ? (
+        <p className="mt-2 rounded-xl bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-700">
+          Linked deck:{" "}
+          <a
+            href={slidesIntegration.deckUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="underline"
+          >
+            Open Google Slides
+          </a>
         </p>
       ) : null}
 
