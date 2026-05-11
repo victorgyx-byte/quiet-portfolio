@@ -10,6 +10,7 @@ const GOOGLE_SLIDES_PRESENTATIONS = "https://slides.googleapis.com/v1/presentati
 type SyncRequestBody = {
   payload?: SlidesExportPayload;
   integration?: SlidesDeckIntegration | null;
+  forceNewDeck?: boolean;
 };
 
 function isValidPayload(payload: unknown): payload is SlidesExportPayload {
@@ -55,6 +56,64 @@ async function createDeck(token: string, title: string) {
     deckId: data.presentationId,
     deckUrl: `https://docs.google.com/presentation/d/${data.presentationId}/edit`
   };
+}
+
+async function addCoverSlide(
+  token: string,
+  deckId: string,
+  payload: SlidesExportPayload
+) {
+  const coverSlideId = "cover_slide";
+  const coverTitleId = "cover_title";
+  const coverSubtitleId = "cover_subtitle";
+  const subtitle = payload.portfolio.growthStatement.trim() || "Learning reflection";
+
+  const requests: Record<string, unknown>[] = [
+    {
+      createSlide: {
+        objectId: coverSlideId,
+        insertionIndex: 0,
+        slideLayoutReference: { predefinedLayout: "TITLE" },
+        placeholderIdMappings: [
+          {
+            layoutPlaceholder: { type: "TITLE", index: 0 },
+            objectId: coverTitleId
+          },
+          {
+            layoutPlaceholder: { type: "SUBTITLE", index: 0 },
+            objectId: coverSubtitleId
+          }
+        ]
+      }
+    },
+    {
+      insertText: {
+        objectId: coverTitleId,
+        insertionIndex: 0,
+        text: payload.portfolio.title
+      }
+    },
+    {
+      insertText: {
+        objectId: coverSubtitleId,
+        insertionIndex: 0,
+        text: `${payload.student.name}\n\n${subtitle}`
+      }
+    }
+  ];
+
+  const response = await googleRequest(
+    `${GOOGLE_SLIDES_PRESENTATIONS}/${deckId}:batchUpdate`,
+    token,
+    {
+      method: "POST",
+      body: JSON.stringify({ requests })
+    }
+  );
+
+  if (!response.ok) {
+    throw new Error("We couldn't add the portfolio cover slide. Please try again.");
+  }
 }
 
 async function appendReflectionSlide(
@@ -173,16 +232,19 @@ export async function POST(request: NextRequest) {
     }
 
     const payload = body.payload;
-    const existing = body.integration ?? null;
+    const forceNewDeck = body.forceNewDeck === true;
+    const existing = forceNewDeck ? null : body.integration ?? null;
     const reflectionSlideMap = { ...(existing?.reflectionSlideMap ?? {}) };
 
     let deckId = existing?.deckId ?? "";
     let deckUrl = existing?.deckUrl ?? "";
 
-    if (!deckId) {
+    const createdNewDeck = !deckId;
+    if (createdNewDeck) {
       const created = await createDeck(token, payload.portfolio.title);
       deckId = created.deckId;
       deckUrl = created.deckUrl;
+      await addCoverSlide(token, deckId, payload);
     }
 
     let addedSlides = 0;
@@ -201,9 +263,11 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       ok: true,
-      message: addedSlides
-        ? `Synced successfully. Added ${addedSlides} new slide(s).`
-        : "No new slides to add. Deck is already up to date.",
+      message: createdNewDeck
+        ? `New Slides deck created. Added ${addedSlides} reflection slide(s).`
+        : addedSlides
+          ? `Synced successfully. Added ${addedSlides} new slide(s).`
+          : "No new slides to add. Deck is already up to date.",
       integration
     });
   } catch (error) {

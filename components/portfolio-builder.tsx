@@ -78,6 +78,7 @@ export function PortfolioBuilder() {
   const [slidesIntegration, setSlidesIntegration] =
     useState<SlidesDeckIntegration | null>(null);
   const [isSyncingSlides, setIsSyncingSlides] = useState(false);
+  const [startNewDeck, setStartNewDeck] = useState(false);
 
   useEffect(() => {
     if (!user) return;
@@ -166,7 +167,8 @@ export function PortfolioBuilder() {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
           payload,
-          integration: slidesIntegration
+          integration: slidesIntegration,
+          forceNewDeck: startNewDeck
         })
       });
       const data = (await response.json()) as {
@@ -183,6 +185,7 @@ export function PortfolioBuilder() {
       setSlidesIntegration(data.integration);
       await saveSlidesIntegration(user.uid, data.integration);
       setSlidesHint(data.message);
+      if (startNewDeck) setStartNewDeck(false);
     } catch {
       setSlidesHint("We couldn't reach Google Slides right now. Please try again.");
     } finally {
@@ -337,6 +340,20 @@ export function PortfolioBuilder() {
             : "Sync to My Google Slides Deck"}
         </button>
       </div>
+      <label className="mt-3 hidden cursor-pointer items-start gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700 sm:flex">
+        <input
+          type="checkbox"
+          checked={startNewDeck}
+          onChange={event => setStartNewDeck(event.target.checked)}
+          className="mt-1 size-4 accent-blue-600"
+        />
+        <span>
+          Start a new Slides deck this time
+          <span className="mt-0.5 block text-xs text-slate-500">
+            Leave this off to keep updating your current deck.
+          </span>
+        </span>
+      </label>
       <p className="mt-2 hidden text-sm text-slate-500 sm:block">
         First time using Slides? Connect Google Drive once before syncing.
       </p>
@@ -463,6 +480,20 @@ export function PortfolioBuilder() {
                 : "Sync to My Google Slides Deck"}
             </button>
           </div>
+          <label className="flex cursor-pointer items-start gap-2 rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm text-slate-700">
+            <input
+              type="checkbox"
+              checked={startNewDeck}
+              onChange={event => setStartNewDeck(event.target.checked)}
+              className="mt-1 size-4 accent-blue-600"
+            />
+            <span>
+              Start a new Slides deck this time
+              <span className="mt-0.5 block text-xs text-slate-500">
+                Leave this off to keep updating your current deck.
+              </span>
+            </span>
+          </label>
           <p className="text-sm text-slate-500">
             First time using Slides? Connect Google Drive once before syncing.
           </p>
