@@ -391,12 +391,12 @@ export function PortfolioBuilder() {
         </p>
       ) : null}
       {slidesHint ? (
-        <p className="mt-2 rounded-xl bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700">
+        <p className="mt-2 hidden rounded-xl bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 sm:block">
           {slidesHint}
         </p>
       ) : null}
       {slidesIntegration?.deckUrl ? (
-        <p className="mt-2 rounded-xl bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-700">
+        <p className="mt-2 hidden rounded-xl bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-700 sm:block">
           Linked deck:{" "}
           <a
             href={slidesIntegration.deckUrl}
@@ -503,6 +503,24 @@ export function PortfolioBuilder() {
           >
             Connect Google Drive
           </Link>
+          {slidesHint ? (
+            <p className="rounded-xl bg-blue-50 px-3 py-2 text-sm font-semibold text-blue-700 sm:hidden">
+              {slidesHint}
+            </p>
+          ) : null}
+          {slidesIntegration?.deckUrl ? (
+            <p className="rounded-xl bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-700 sm:hidden">
+              Linked deck:{" "}
+              <a
+                href={slidesIntegration.deckUrl}
+                target="_blank"
+                rel="noreferrer"
+                className="underline"
+              >
+                Open Google Slides
+              </a>
+            </p>
+          ) : null}
         </div>
 
         <div className="rounded-2xl border border-slate-200 bg-white p-4">
