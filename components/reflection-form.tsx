@@ -157,11 +157,17 @@ export function ReflectionForm() {
   }
 
   const stepLabel = useMemo(() => `Step ${step} of 4`, [step]);
+  const stepCardClass = useMemo(() => {
+    if (step === 1) return "border-orange-200/80 bg-orange-50/85";
+    if (step === 2) return "border-amber-200/80 bg-amber-50/85";
+    if (step === 3) return "border-sky-200/80 bg-sky-50/85";
+    return "border-violet-200/80 bg-violet-50/85";
+  }, [step]);
 
   return (
     <form
       onSubmit={handleSave}
-      className="rounded-3xl border border-orange-200/80 bg-orange-50/85 p-4 shadow-soft backdrop-blur sm:p-5"
+      className={`rounded-3xl border p-4 shadow-soft backdrop-blur sm:p-5 ${stepCardClass}`}
     >
       <div className="mb-4 flex items-center justify-between">
         <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -210,7 +216,7 @@ export function ReflectionForm() {
                   What stayed with you today?
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  What's one moment you keep thinking about
+                  What's one moment you keep thinking about?
                 </p>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
                   What happened? What did you notice, feel, try, or struggle with?
@@ -307,7 +313,7 @@ export function ReflectionForm() {
                   Add why this moment matters to your growth.
                 </p>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  You can write about what changed, what you learned about yourself, or what you might try next.
+                  You can write about what changed, what you learned about yourself, what you might try next.
                 </p>
               </div>
               <textarea
