@@ -1,16 +1,19 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 
 export function SignInButton({ compact = false }: { compact?: boolean }) {
   const { signInWithGoogle } = useAuth();
+  const router = useRouter();
   const [isSigningIn, setIsSigningIn] = useState(false);
 
   async function handleSignIn() {
     setIsSigningIn(true);
     try {
       await signInWithGoogle();
+      router.push("/dashboard");
     } finally {
       setIsSigningIn(false);
     }
