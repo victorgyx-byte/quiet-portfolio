@@ -1,6 +1,7 @@
 "use client";
 
-import { ChangeEvent, FormEvent, useEffect, useState } from "react";
+import Link from "next/link";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { createReflection } from "@/lib/reflections";
 import { uploadReflectionImages } from "@/lib/storage";
@@ -18,23 +19,49 @@ const competencies = [
   "Global Literacy",
   "Cross-Cultural Literacy"
 ];
+
 const MAX_IMAGES = 3;
+
 type SelectedImage = {
   file: File;
   previewUrl: string;
 };
 
+type SaveStatus = "idle" | "saving" | "saved" | "error";
+
+function buildReflectionTitle(momentText: string) {
+  const trimmed = momentText.trim();
+  if (!trimmed) return "Captured moment";
+  return trimmed.length > 80 ? `${trimmed.slice(0, 80)}...` : trimmed;
+}
+
+function buildReflectionBody(momentText: string, elaborationText: string) {
+  const moment = momentText.trim();
+  const elaboration = elaborationText.trim();
+
+  if (moment && elaboration) {
+    return `Moment:\n${moment}\n\nWhy this mattered:\n${elaboration}`;
+  }
+  if (elaboration) return elaboration;
+  if (moment) return moment;
+  return "Image-based reflection.";
+}
+
 export function ReflectionForm() {
   const { user } = useAuth();
-  const [title, setTitle] = useState("");
-  const [body, setBody] = useState("");
+
+  const [step, setStep] = useState(1);
+  const [momentText, setMomentText] = useState("");
+  const [elaborationText, setElaborationText] = useState("");
   const [category, setCategory] = useState(categories[0]);
-  const [competency, setCompetency] = useState(competencies[5]);
+  const [competency, setCompetency] = useState(competencies[0]);
   const [visibility, setVisibility] = useState<ReflectionVisibility>("private");
   const [files, setFiles] = useState<SelectedImage[]>([]);
-  const [dragIndex, setDragIndex] = useState<number | null>(null);
-  const [status, setStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const [status, setStatus] = useState<SaveStatus>("idle");
   const [error, setError] = useState("");
+
+  const canContinueStep1 = momentText.trim().length > 0 || files.length > 0;
+  const canSave = canContinueStep1 && Boolean(competency) && Boolean(category);
 
   useEffect(() => {
     return () => {
@@ -45,6 +72,18 @@ export function ReflectionForm() {
   function replaceFiles(next: SelectedImage[]) {
     files.forEach(image => URL.revokeObjectURL(image.previewUrl));
     setFiles(next);
+  }
+
+  function resetFlow() {
+    setStep(1);
+    setMomentText("");
+    setElaborationText("");
+    setCategory(categories[0]);
+    setCompetency(competencies[0]);
+    setVisibility("private");
+    replaceFiles([]);
+    setStatus("idle");
+    setError("");
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -78,22 +117,13 @@ export function ReflectionForm() {
     });
   }
 
-  function moveImage(from: number, to: number) {
-    if (to < 0 || to >= files.length || from === to) return;
-    setFiles(current => {
-      const copy = [...current];
-      const [moved] = copy.splice(from, 1);
-      copy.splice(to, 0, moved);
-      return copy;
-    });
-  }
-
-  async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!user || !title.trim() || !body.trim()) return;
+    if (!user || !canSave) return;
 
     setStatus("saving");
     setError("");
+
     try {
       const images = files.length
         ? await uploadReflectionImages(
@@ -101,215 +131,311 @@ export function ReflectionForm() {
             files.map(image => image.file)
           )
         : [];
+
       await createReflection({
         userId: user.uid,
         studentName: user.displayName ?? "Student",
         studentEmail: user.email ?? "",
-        title: title.trim(),
-        body: body.trim(),
+        title: buildReflectionTitle(momentText),
+        body: buildReflectionBody(momentText, elaborationText),
         category,
         competency,
         visibility,
         images
       });
-      setTitle("");
-      setBody("");
-      setVisibility("private");
-      replaceFiles([]);
-      setDragIndex(null);
+
       setStatus("saved");
     } catch {
       setStatus("error");
-      setError("Image upload or save failed. Check Firebase settings and try again.");
+      setError("Could not save this moment. Please try again.");
     }
   }
 
+  const stepLabel = useMemo(() => `Step ${step} of 4`, [step]);
+
   return (
     <form
-      onSubmit={handleSubmit}
+      onSubmit={handleSave}
       className="rounded-3xl border border-white/80 bg-white/88 p-4 shadow-soft backdrop-blur sm:p-5"
     >
-      <div className="flex items-start justify-between gap-3">
-        <div>
-          <h2 className="text-xl font-bold text-ink sm:text-2xl">New reflection</h2>
-          <p className="mt-1 text-sm leading-6 text-ink/62">
-            Keep it short. One moment, one insight, one next step.
-          </p>
+      <div className="mb-4 flex items-center justify-between">
+        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-ink/50">
+          {stepLabel}
+        </p>
+        <div className="flex gap-1.5">
+          {[1, 2, 3, 4].map(point => (
+            <span
+              key={point}
+              className={`h-1.5 w-7 rounded-full ${
+                point <= step ? "bg-moss" : "bg-ink/14"
+              }`}
+            />
+          ))}
         </div>
-        <span className="rounded-full bg-skywash px-3 py-1 text-xs font-semibold text-moss">
-          Student owned
-        </span>
       </div>
 
-      <div className="mt-5 space-y-4">
-        <label className="block">
-          <span className="text-sm font-semibold text-ink">Title</span>
-          <input
-            value={title}
-            onChange={event => setTitle(event.target.value)}
-            placeholder="What changed in your learning?"
-            className="mt-2 min-h-12 w-full rounded-2xl border border-ink/10 bg-mist px-4 text-base outline-none transition focus:border-moss focus:bg-white"
-          />
-        </label>
-
-        <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block">
-            <span className="text-sm font-semibold text-ink">Context</span>
-            <select
-              value={category}
-              onChange={event => setCategory(event.target.value)}
-              className="mt-2 min-h-12 w-full rounded-2xl border border-ink/10 bg-mist px-4 text-base outline-none transition focus:border-moss focus:bg-white"
+      {status === "saved" ? (
+        <div className="space-y-4">
+          <h2 className="text-2xl font-bold text-ink">Saved to timeline</h2>
+          <p className="text-sm leading-6 text-ink/68">
+            Your reflection has been captured successfully.
+          </p>
+          <div className="grid gap-2 sm:grid-cols-2">
+            <Link
+              href="/timeline"
+              className="btn-primary grid place-items-center"
             >
-              {categories.map(item => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-          </label>
-
-          <label className="block">
-            <span className="text-sm font-semibold text-ink">21CC focus</span>
-            <select
-              value={competency}
-              onChange={event => setCompetency(event.target.value)}
-              className="mt-2 min-h-12 w-full rounded-2xl border border-ink/10 bg-mist px-4 text-base outline-none transition focus:border-moss focus:bg-white"
+              View timeline
+            </Link>
+            <button
+              type="button"
+              onClick={resetFlow}
+              className="btn-secondary"
             >
-              {competencies.map(item => (
-                <option key={item}>{item}</option>
-              ))}
-            </select>
-          </label>
+              Add another moment
+            </button>
+          </div>
         </div>
+      ) : (
+        <>
+          {step === 1 ? (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-xl font-bold text-ink sm:text-2xl">
+                  What stayed with you today?
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-ink/62">
+                  Just one moment, thought, or feeling.
+                </p>
+              </div>
 
-        <label className="block">
-          <span className="text-sm font-semibold text-ink">Reflection</span>
-          <textarea
-            value={body}
-            onChange={event => setBody(event.target.value)}
-            placeholder="What did you notice? What helped? What might you try next?"
-            rows={5}
-            className="mt-2 w-full resize-none rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-base leading-7 outline-none transition focus:border-moss focus:bg-white"
-          />
-        </label>
-
-        <label className="block">
-          <span className="text-sm font-semibold text-ink">Images (optional)</span>
-          <input
-            type="file"
-            accept="image/*"
-            multiple
-            onChange={handleFileChange}
-            className="mt-2 min-h-12 w-full rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-sm outline-none transition file:mr-3 file:rounded-full file:border-0 file:bg-ink file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-moss"
-          />
-          <p className="mt-2 text-xs text-ink/58">Up to 3 images. Compressed before upload.</p>
-        </label>
-
-        {files.length ? (
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-            {files.map((image, index) => (
-              <div
-                key={`${image.file.name}-${image.file.size}-${index}`}
-                draggable
-                onDragStart={() => setDragIndex(index)}
-                onDragOver={event => event.preventDefault()}
-                onDrop={() => {
-                  if (dragIndex !== null) moveImage(dragIndex, index);
-                  setDragIndex(null);
-                }}
-                onDragEnd={() => setDragIndex(null)}
-                className={`overflow-hidden rounded-xl border ${
-                  dragIndex === index ? "border-moss bg-skywash" : "border-ink/10 bg-white"
-                }`}
-              >
-                <img
-                  src={image.previewUrl}
-                  alt={image.file.name}
-                  className="h-24 w-full object-cover"
+              <label className="block">
+                <textarea
+                  value={momentText}
+                  onChange={event => setMomentText(event.target.value)}
+                  placeholder="Write a short moment..."
+                  rows={4}
+                  className="w-full resize-none rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-base leading-7 outline-none transition focus:border-moss focus:bg-white"
                 />
-                <div className="space-y-2 p-2">
-                  <p
-                    className="truncate text-xs font-semibold text-ink/72"
-                    title={image.file.name}
-                  >
-                    {image.file.name}
-                  </p>
-                  <div className="grid grid-cols-3 gap-1">
+              </label>
+
+              <label className="block">
+                <span className="text-sm font-semibold text-ink">Photo (optional)</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  multiple
+                  onChange={handleFileChange}
+                  className="mt-2 min-h-11 w-full rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-sm outline-none transition file:mr-3 file:rounded-full file:border-0 file:bg-ink file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-moss"
+                />
+              </label>
+
+              {files.length ? (
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  {files.map((image, index) => (
+                    <div key={`${image.file.name}-${image.file.size}-${index}`} className="rounded-xl border border-ink/10 bg-white p-2">
+                      <img
+                        src={image.previewUrl}
+                        alt={image.file.name}
+                        className="h-24 w-full rounded-lg object-cover"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => removeImage(index)}
+                        className="btn-tertiary mt-2 w-full border-clay/30 bg-oat text-clay"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+
+              <button
+                type="button"
+                disabled={!canContinueStep1}
+                onClick={() => setStep(2)}
+                className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                Save moment & continue
+              </button>
+            </div>
+          ) : null}
+
+          {step === 2 ? (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-xl font-bold text-ink sm:text-2xl">
+                  What made this important?
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-ink/62">
+                  What did you notice, what helped, what can you do from here?
+                </p>
+              </div>
+              <textarea
+                value={elaborationText}
+                onChange={event => setElaborationText(event.target.value)}
+                placeholder="Write a short reflection..."
+                rows={5}
+                className="w-full resize-none rounded-2xl border border-ink/10 bg-mist px-4 py-3 text-base leading-7 outline-none transition focus:border-moss focus:bg-white"
+              />
+              <div className="grid gap-2 sm:grid-cols-3">
+                <button
+                  type="button"
+                  onClick={() => setStep(1)}
+                  className="btn-secondary"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep(3)}
+                  className="btn-secondary"
+                >
+                  Skip for now
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep(3)}
+                  className="btn-primary"
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {step === 3 ? (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-xl font-bold text-ink sm:text-2xl">
+                  What kind of growth does this show?
+                </h2>
+                <p className="mt-1 text-sm leading-6 text-ink/62">
+                  Choose one that feels closest, then pick context.
+                </p>
+              </div>
+
+              <div>
+                <p className="mb-2 text-sm font-semibold text-ink">21CC growth tag</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {competencies.map(item => (
                     <button
+                      key={item}
                       type="button"
-                      onClick={() => moveImage(index, index - 1)}
-                      disabled={index === 0}
-                      className="rounded-lg border border-ink/10 px-2 py-1 text-xs font-semibold text-ink/65 disabled:opacity-40"
+                      onClick={() => setCompetency(item)}
+                      className={`min-h-11 rounded-2xl border px-3 py-2 text-left text-sm font-semibold ${
+                        competency === item
+                          ? "border-moss bg-skywash text-moss"
+                          : "border-ink/10 bg-white text-ink/72"
+                      }`}
                     >
-                      Left
+                      {item}
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => moveImage(index, index + 1)}
-                      disabled={index === files.length - 1}
-                      className="rounded-lg border border-ink/10 px-2 py-1 text-xs font-semibold text-ink/65 disabled:opacity-40"
-                    >
-                      Right
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => removeImage(index)}
-                      className="rounded-lg border border-clay/30 bg-oat px-2 py-1 text-xs font-semibold text-clay"
-                    >
-                      Remove
-                    </button>
-                  </div>
+                  ))}
                 </div>
               </div>
-            ))}
-          </div>
-        ) : null}
 
-        <fieldset>
-          <legend className="text-sm font-semibold text-ink">Visibility</legend>
-          <div className="mt-2 grid gap-2 sm:grid-cols-2">
-            {[
-              ["private", "Private"],
-              ["shared_with_teacher", "Share with teacher"]
-            ].map(([value, label]) => (
-              <label
-                key={value}
-                className={`flex min-h-12 cursor-pointer items-center gap-3 rounded-2xl border px-4 text-sm font-semibold transition ${
-                  visibility === value
-                    ? "border-moss bg-skywash text-moss"
-                    : "border-ink/10 bg-white/70 text-ink/70"
-                }`}
-              >
-                <input
-                  type="radio"
-                  name="visibility"
-                  value={value}
-                  checked={visibility === value}
-                  onChange={event => setVisibility(event.target.value as ReflectionVisibility)}
-                  className="size-4 accent-moss"
-                />
-                {label}
-              </label>
-            ))}
-          </div>
-        </fieldset>
+              <div>
+                <p className="mb-2 text-sm font-semibold text-ink">Context</p>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {categories.map(item => (
+                    <button
+                      key={item}
+                      type="button"
+                      onClick={() => setCategory(item)}
+                      className={`min-h-11 rounded-2xl border px-3 py-2 text-left text-sm font-semibold ${
+                        category === item
+                          ? "border-moss bg-skywash text-moss"
+                          : "border-ink/10 bg-white text-ink/72"
+                      }`}
+                    >
+                      {item}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-        <button
-          type="submit"
-          disabled={status === "saving" || !title.trim() || !body.trim()}
-          className="min-h-12 w-full rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-white transition hover:bg-moss disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          {status === "saving" ? "Saving..." : "Save reflection"}
-        </button>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="btn-secondary"
+                >
+                  Back
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep(4)}
+                  className="btn-primary"
+                >
+                  Continue
+                </button>
+              </div>
+            </div>
+          ) : null}
 
-        {status === "saved" ? (
-          <p className="text-center text-sm font-semibold text-moss">Reflection saved.</p>
-        ) : null}
-        {status === "error" ? (
-          <p className="text-center text-sm font-semibold text-clay">
-            Something went wrong. Check Firebase settings and try again.
-          </p>
-        ) : null}
-        {error ? <p className="text-center text-sm font-semibold text-clay">{error}</p> : null}
-      </div>
+          {step === 4 ? (
+            <div className="space-y-4">
+              <div>
+                <h2 className="text-xl font-bold text-ink sm:text-2xl">Who should see this?</h2>
+                <p className="mt-1 text-sm leading-6 text-ink/62">
+                  Sharing with teachers can help you get feedback and guidance. You can
+                  keep this private if you prefer.
+                </p>
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                {[
+                  ["private", "Private"],
+                  ["shared_with_teacher", "Share with teacher"]
+                ].map(([value, label]) => (
+                  <button
+                    key={value}
+                    type="button"
+                    onClick={() => setVisibility(value as ReflectionVisibility)}
+                    className={`min-h-11 rounded-2xl border px-4 py-2 text-sm font-semibold ${
+                      visibility === value
+                        ? "border-moss bg-skywash text-moss"
+                        : "border-ink/10 bg-white text-ink/72"
+                    }`}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+
+              <div className="grid gap-2 sm:grid-cols-2">
+                <button
+                  type="button"
+                  onClick={() => setStep(3)}
+                  className="btn-secondary"
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  disabled={status === "saving" || !canSave}
+                  className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
+                >
+                  {status === "saving" ? "Saving..." : "Save moment"}
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {status === "error" ? (
+            <p className="mt-3 rounded-xl bg-oat px-3 py-2 text-sm font-semibold text-clay">
+              Something went wrong while saving. Please try again.
+            </p>
+          ) : null}
+          {error ? (
+            <p className="mt-3 rounded-xl bg-oat px-3 py-2 text-sm font-semibold text-clay">
+              {error}
+            </p>
+          ) : null}
+        </>
+      )}
     </form>
   );
 }

@@ -210,7 +210,7 @@ export function PortfolioBuilder() {
           type="button"
           onClick={exportToPdf}
           disabled={selectedReflections.length === 0}
-          className="min-h-11 rounded-full bg-ink px-4 py-2 text-sm font-semibold text-white transition hover:bg-moss disabled:cursor-not-allowed disabled:opacity-45"
+          className="btn-primary w-auto rounded-full px-4 disabled:cursor-not-allowed disabled:opacity-45"
         >
           Export PDF ({selectedReflections.length})
         </button>
