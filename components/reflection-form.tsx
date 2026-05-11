@@ -282,6 +282,13 @@ export function ReflectionForm() {
               <div className="grid gap-2 sm:grid-cols-3">
                 <button
                   type="button"
+                  onClick={() => setStep(3)}
+                  className="btn-primary sm:col-span-1"
+                >
+                  Continue
+                </button>
+                <button
+                  type="button"
                   onClick={() => setStep(1)}
                   className="btn-secondary"
                 >
@@ -293,13 +300,6 @@ export function ReflectionForm() {
                   className="btn-secondary"
                 >
                   Skip for now
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep(3)}
-                  className="btn-primary"
-                >
-                  Continue
                 </button>
               </div>
             </div>
@@ -359,17 +359,17 @@ export function ReflectionForm() {
               <div className="grid gap-2 sm:grid-cols-2">
                 <button
                   type="button"
-                  onClick={() => setStep(2)}
-                  className="btn-secondary"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
                   onClick={() => setStep(4)}
                   className="btn-primary"
                 >
                   Continue
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep(2)}
+                  className="btn-secondary"
+                >
+                  Back
                 </button>
               </div>
             </div>
@@ -385,40 +385,65 @@ export function ReflectionForm() {
                 </p>
               </div>
 
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className="space-y-2">
                 {[
-                  ["private", "Private"],
-                  ["shared_with_teacher", "Share with teacher"]
-                ].map(([value, label]) => (
-                  <button
+                  [
+                    "private",
+                    "Private",
+                    "Only you can see this entry."
+                  ],
+                  [
+                    "shared_with_teacher",
+                    "Share with teacher",
+                    "Teachers can view this and give feedback."
+                  ]
+                ].map(([value, label, help]) => (
+                  <label
                     key={value}
-                    type="button"
-                    onClick={() => setVisibility(value as ReflectionVisibility)}
-                    className={`min-h-11 rounded-2xl border px-4 py-2 text-sm font-semibold ${
+                    className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 ${
                       visibility === value
-                        ? "border-moss bg-skywash text-moss"
-                        : "border-ink/10 bg-white text-ink/72"
+                        ? "border-moss bg-skywash"
+                        : "border-ink/10 bg-white"
                     }`}
                   >
-                    {label}
-                  </button>
+                    <input
+                      type="radio"
+                      name="visibility"
+                      value={value}
+                      checked={visibility === value}
+                      onChange={event =>
+                        setVisibility(event.target.value as ReflectionVisibility)
+                      }
+                      className="mt-1 size-4 accent-moss"
+                    />
+                    <span>
+                      <span
+                        className={`block text-sm font-semibold ${
+                          visibility === value ? "text-moss" : "text-ink/78"
+                        }`}
+                      >
+                        {label}
+                      </span>
+                      <span className="block text-xs text-ink/58">{help}</span>
+                    </span>
+                  </label>
                 ))}
               </div>
 
               <div className="grid gap-2 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(3)}
-                  className="btn-secondary"
-                >
-                  Back
-                </button>
                 <button
                   type="submit"
                   disabled={status === "saving" || !canSave}
                   className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
                 >
                   {status === "saving" ? "Saving..." : "Save moment"}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStep(3)}
+                  className="btn-secondary"
+                >
+                  Back
                 </button>
               </div>
             </div>
