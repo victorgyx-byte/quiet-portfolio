@@ -6,6 +6,7 @@ import type { ReflectionImage } from "@/types/reflection";
 
 const MAX_WIDTH = 1600;
 const JPEG_QUALITY = 0.82;
+const UPLOAD_CONCURRENCY = 2;
 
 function readFileAsDataUrl(file: File) {
   return new Promise<string>((resolve, reject) => {
@@ -55,24 +56,31 @@ async function compressImage(file: File) {
 }
 
 export async function uploadReflectionImages(userId: string, files: File[]) {
-  const uploads: ReflectionImage[] = [];
-
-  for (const file of files) {
+  async function uploadOne(file: File, index: number) {
     const timestamp = Date.now();
     const safeName = file.name.replace(/\s+/g, "_");
-    const path = `reflections/${userId}/${timestamp}-${safeName}.jpg`;
+    const path = `reflections/${userId}/${timestamp}-${index}-${safeName}.jpg`;
     const fileRef = ref(storage, path);
 
     const blob = await compressImage(file);
     await uploadBytes(fileRef, blob, { contentType: "image/jpeg" });
     const url = await getDownloadURL(fileRef);
 
-    uploads.push({
+    return {
       url,
       path,
       contentType: "image/jpeg",
       size: blob.size
-    });
+    } as ReflectionImage;
+  }
+
+  const uploads: ReflectionImage[] = [];
+  for (let start = 0; start < files.length; start += UPLOAD_CONCURRENCY) {
+    const batch = files.slice(start, start + UPLOAD_CONCURRENCY);
+    const batchUploads = await Promise.all(
+      batch.map((file, offset) => uploadOne(file, start + offset))
+    );
+    uploads.push(...batchUploads);
   }
 
   return uploads;
