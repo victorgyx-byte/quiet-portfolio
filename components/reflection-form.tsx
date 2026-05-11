@@ -205,7 +205,10 @@ export function ReflectionForm() {
                   What stayed with you today?
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Just one moment, thought, or feeling.
+                  What's one moment you keep thinking about
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  What happened? What did you notice, feel, try, or struggle with?
                 </p>
               </div>
 
@@ -213,14 +216,16 @@ export function ReflectionForm() {
                 <textarea
                   value={momentText}
                   onChange={event => setMomentText(event.target.value)}
-                  placeholder="Write a short moment..."
+                  placeholder="I noticed..."
                   rows={4}
                   className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base leading-7 outline-none transition focus:border-blue-500 focus:bg-white"
                 />
               </label>
 
               <label className="block">
-                <span className="text-sm font-semibold text-slate-800">Photo drop (optional)</span>
+                <span className="text-sm font-semibold text-slate-800">
+                  Add photo if it helps you remember.
+                </span>
                 <input
                   type="file"
                   accept="image/*"
@@ -257,7 +262,7 @@ export function ReflectionForm() {
                 onClick={() => setStep(2)}
                 className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
               >
-                Save moment & continue
+                Continue
               </button>
             </div>
           ) : null}
@@ -269,13 +274,16 @@ export function ReflectionForm() {
                   What made this important?
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  What did you notice, what helped, and what might you do next?
+                  Add why this moment matters to your growth.
+                </p>
+                <p className="mt-1 text-sm leading-6 text-slate-500">
+                  You can write about what changed, what you learned about yourself, or what you might try next.
                 </p>
               </div>
               <textarea
                 value={elaborationText}
                 onChange={event => setElaborationText(event.target.value)}
-                placeholder="Write a short reflection..."
+                placeholder="This mattered because..."
                 rows={5}
                 className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base leading-7 outline-none transition focus:border-blue-500 focus:bg-white"
               />
