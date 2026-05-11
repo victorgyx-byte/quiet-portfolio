@@ -5,12 +5,17 @@ import {
   addDoc,
   collection,
   doc,
+  getDocs,
   onSnapshot,
   orderBy,
   query,
+  limit,
   serverTimestamp,
+  startAfter,
   updateDoc,
-  where
+  where,
+  type DocumentData,
+  type QueryDocumentSnapshot
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { NewReflection, Reflection } from "@/types/reflection";
@@ -87,4 +92,36 @@ export function subscribeToTeacherReflections(
     },
     onError
   );
+}
+
+export async function fetchStudentReflectionsPage(
+  userId: string,
+  pageSize = 20,
+  cursor?: QueryDocumentSnapshot<DocumentData>
+) {
+  const reflectionsQuery = cursor
+    ? query(
+        reflectionsCollection,
+        where("userId", "==", userId),
+        orderBy("createdAt", "desc"),
+        startAfter(cursor),
+        limit(pageSize)
+      )
+    : query(
+        reflectionsCollection,
+        where("userId", "==", userId),
+        orderBy("createdAt", "desc"),
+        limit(pageSize)
+      );
+
+  const snapshot = await getDocs(reflectionsQuery);
+  const reflections = snapshot.docs.map(
+    doc => ({ id: doc.id, ...doc.data() }) as Reflection
+  );
+
+  return {
+    reflections,
+    cursor: snapshot.docs.at(-1),
+    hasMore: snapshot.docs.length === pageSize
+  };
 }
