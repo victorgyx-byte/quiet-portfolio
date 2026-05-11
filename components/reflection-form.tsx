@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ChangeEvent, FormEvent, useEffect, useMemo, useState } from "react";
+import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { createReflection } from "@/lib/reflections";
 import { uploadReflectionImages } from "@/lib/storage";
@@ -59,6 +59,8 @@ export function ReflectionForm() {
   const [files, setFiles] = useState<SelectedImage[]>([]);
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [error, setError] = useState("");
+  const cameraInputRef = useRef<HTMLInputElement | null>(null);
+  const libraryInputRef = useRef<HTMLInputElement | null>(null);
 
   const canContinueStep1 = momentText.trim().length > 0 || files.length > 0;
   const canSave = canContinueStep1 && Boolean(competency) && Boolean(category);
@@ -229,13 +231,37 @@ export function ReflectionForm() {
                 <span className="text-sm font-semibold text-slate-800">
                   Add photo if it helps you remember.
                 </span>
+                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                  <button
+                    type="button"
+                    onClick={() => cameraInputRef.current?.click()}
+                    className="btn-secondary"
+                  >
+                    Take Photo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => libraryInputRef.current?.click()}
+                    className="btn-secondary"
+                  >
+                    Choose from Library
+                  </button>
+                </div>
                 <input
+                  ref={cameraInputRef}
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={handleFileChange}
+                  className="hidden"
+                />
+                <input
+                  ref={libraryInputRef}
                   type="file"
                   accept="image/*"
                   multiple
-                  capture="environment"
                   onChange={handleFileChange}
-                  className="mt-2 min-h-11 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm outline-none transition file:mr-3 file:rounded-full file:border-0 file:bg-slate-900 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-white hover:file:bg-blue-700"
+                  className="hidden"
                 />
               </label>
 
