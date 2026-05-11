@@ -19,7 +19,7 @@ export function LandingPage() {
       <section className="mx-auto grid min-h-screen w-full max-w-6xl content-center gap-10 px-5 py-8 sm:px-8 lg:grid-cols-[1.05fr_0.95fr] lg:items-center">
         <div className="max-w-2xl">
           <p className="mb-4 text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Secondary student portfolio
+            Student portfolio
           </p>
           <h1 className="text-5xl font-bold leading-[1.02] tracking-normal text-slate-900 sm:text-6xl">
             Student's Companion
