@@ -90,6 +90,7 @@ export function PortfolioBuilder() {
   const [reflections, setReflections] = useState<Reflection[]>([]);
   const [portfolios, setPortfolios] = useState<Portfolio[]>([]);
   const [selectedPortfolioId, setSelectedPortfolioId] = useState("");
+  const [expandedPortfolioId, setExpandedPortfolioId] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const [createStep, setCreateStep] = useState(1);
   const [statusMessage, setStatusMessage] = useState("");
@@ -117,8 +118,11 @@ export function PortfolioBuilder() {
     if (!user) return;
     return subscribeToStudentPortfolios(user.uid, data => {
       setPortfolios(data);
-      if (!selectedPortfolioId && data.length) setSelectedPortfolioId(data[0].id);
-    }, () => undefined);
+      if (!selectedPortfolioId && data.length) {
+        setSelectedPortfolioId(data[0].id);
+        setExpandedPortfolioId(data[0].id);
+      }
+    }, () => setStatusMessage("Could not load portfolios right now. Please refresh."));
   }, [user, selectedPortfolioId]);
 
   const selectedPortfolio = useMemo(
@@ -197,6 +201,7 @@ export function PortfolioBuilder() {
         slidesIntegration: null
       });
       setSelectedPortfolioId(created.id);
+      setExpandedPortfolioId(created.id);
       setIsCreating(false);
       setStatusMessage("Portfolio created. You can keep updating it anytime.");
     } catch {
@@ -417,28 +422,6 @@ export function PortfolioBuilder() {
         </button>
       </div>
 
-      {portfolios.length > 0 && !isCreating ? (
-        <div className="mt-4 grid gap-2">
-          {portfolios.map(item => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setSelectedPortfolioId(item.id)}
-              className={`rounded-2xl border px-3 py-3 text-left ${
-                selectedPortfolioId === item.id
-                  ? "border-blue-300 bg-blue-50"
-                  : "border-slate-200 bg-white"
-              }`}
-            >
-              <p className="text-sm font-semibold text-slate-900">{item.title}</p>
-              <p className="mt-0.5 text-xs text-slate-500">
-                {item.focusTags?.slice(0, 2).join(", ") || "No focus yet"}
-              </p>
-            </button>
-          ))}
-        </div>
-      ) : null}
-
       {isCreating ? (
         <div className="mt-4 space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
@@ -592,117 +575,152 @@ export function PortfolioBuilder() {
         </div>
       ) : null}
 
-      {!isCreating && selectedPortfolio ? (
-        <div className="mt-4 space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
-          <h3 className="text-xl font-bold text-slate-900">{title}</h3>
-          <p className="text-sm text-slate-500">
-            Add more reflections, update your story, then export to Slides or PDF.
-          </p>
+      {!isCreating && portfolios.length > 0 ? (
+        <div className="mt-4 space-y-3">
+          {portfolios.map(item => {
+            const isExpanded = expandedPortfolioId === item.id;
+            return (
+              <details
+                key={item.id}
+                open={isExpanded}
+                className="rounded-2xl border border-slate-200 bg-white p-3"
+              >
+                <summary
+                  className="cursor-pointer list-none"
+                  onClick={event => {
+                    event.preventDefault();
+                    const next = isExpanded ? "" : item.id;
+                    setExpandedPortfolioId(next);
+                    if (next) setSelectedPortfolioId(item.id);
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-900">{item.title}</p>
+                      <p className="mt-0.5 text-xs text-slate-500">
+                        {item.focusTags?.slice(0, 2).join(", ") || "No focus yet"}
+                      </p>
+                    </div>
+                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
+                      {isExpanded ? "Hide" : "Edit"}
+                    </span>
+                  </div>
+                </summary>
 
-          <div className="grid gap-3">
-            <input
-              value={title}
-              onChange={event => setTitle(event.target.value)}
-              className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-500"
-            />
-            <textarea
-              value={growthStatement}
-              onChange={event => setGrowthStatement(event.target.value)}
-              placeholder="Growth statement..."
-              rows={4}
-              className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-500"
-            />
-            <div className="max-h-60 space-y-2 overflow-auto pr-1">
-              {reflections.map(reflection => (
-                <label key={reflection.id} className="flex gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-                  <input
-                    type="checkbox"
-                    checked={selectedReflectionIds.includes(reflection.id)}
-                    onChange={() => toggleReflection(reflection.id)}
-                    className="mt-1 size-4 accent-blue-600"
-                  />
-                  <span>
-                    <span className="block text-sm font-semibold text-slate-900">{reflection.title}</span>
-                    <span className="text-xs text-slate-500">{formatDate(reflection.createdAt)}</span>
-                  </span>
-                </label>
-              ))}
-            </div>
-            <button
-              type="button"
-              onClick={handleSavePortfolio}
-              disabled={isSaving}
-              className="btn-secondary disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              {isSaving ? "Saving..." : "Save portfolio changes"}
-            </button>
-          </div>
-
-          <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
-            <p className="text-sm font-semibold text-slate-800">Additional reflection update</p>
-            <textarea
-              value={quickUpdateText}
-              onChange={event => setQuickUpdateText(event.target.value)}
-              placeholder="What changed since your last update?"
-              rows={3}
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
-            />
-            <button type="button" onClick={handleAddQuickUpdate} className="btn-secondary">
-              Add update note
-            </button>
-            {(selectedPortfolio.updates ?? []).length > 0 ? (
-              <div className="space-y-2">
-                {[...(selectedPortfolio.updates ?? [])]
-                  .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-                  .slice(0, 3)
-                  .map((note, index) => (
-                    <p key={`${note.createdAt}-${index}`} className="rounded-lg bg-white px-3 py-2 text-sm text-slate-700">
-                      {note.text}
+                {isExpanded && selectedPortfolioId === item.id ? (
+                  <div className="mt-3 space-y-4 border-t border-slate-200 pt-3">
+                    <p className="text-sm text-slate-500">
+                      Add more reflections, update your story, then export to Slides or PDF.
                     </p>
-                  ))}
-              </div>
-            ) : null}
-          </div>
+                    <div className="grid gap-3">
+                      <input
+                        value={title}
+                        onChange={event => setTitle(event.target.value)}
+                        className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-500"
+                      />
+                      <textarea
+                        value={growthStatement}
+                        onChange={event => setGrowthStatement(event.target.value)}
+                        placeholder="Growth statement..."
+                        rows={4}
+                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                      />
+                      <div className="max-h-60 space-y-2 overflow-auto pr-1">
+                        {reflections.map(reflection => (
+                          <label key={reflection.id} className="flex gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                            <input
+                              type="checkbox"
+                              checked={selectedReflectionIds.includes(reflection.id)}
+                              onChange={() => toggleReflection(reflection.id)}
+                              className="mt-1 size-4 accent-blue-600"
+                            />
+                            <span>
+                              <span className="block text-sm font-semibold text-slate-900">{reflection.title}</span>
+                              <span className="text-xs text-slate-500">{formatDate(reflection.createdAt)}</span>
+                            </span>
+                          </label>
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleSavePortfolio}
+                        disabled={isSaving}
+                        className="btn-secondary disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        {isSaving ? "Saving..." : "Save portfolio changes"}
+                      </button>
+                    </div>
 
-          <div className="grid gap-2 sm:grid-cols-2">
-            <button type="button" onClick={exportToPdf} className="btn-primary">
-              Export PDF
-            </button>
-            <button
-              type="button"
-              onClick={syncToGoogleSlides}
-              disabled={isSyncingSlides}
-              className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              {isSyncingSlides ? "Syncing to Google Slides..." : "Sync to My Google Slides Deck"}
-            </button>
-          </div>
-          <label className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-            <input
-              type="checkbox"
-              checked={startNewDeck}
-              onChange={event => setStartNewDeck(event.target.checked)}
-              className="mt-1 size-4 accent-blue-600"
-            />
-            <span>Start a new Slides deck this time</span>
-          </label>
-          <p className="text-sm text-slate-500">
-            First time using Slides? Connect Google Drive once before syncing.
-          </p>
-          <Link
-            href="/api/google/connect"
-            className="btn-secondary inline-flex w-full items-center justify-center rounded-2xl"
-          >
-            Connect Google Drive
-          </Link>
-          {slidesIntegration?.deckUrl ? (
-            <p className="rounded-xl bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-700">
-              Linked deck:{" "}
-              <a href={slidesIntegration.deckUrl} target="_blank" rel="noreferrer" className="underline">
-                Open Google Slides
-              </a>
-            </p>
-          ) : null}
+                    <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                      <p className="text-sm font-semibold text-slate-800">Additional reflection update</p>
+                      <textarea
+                        value={quickUpdateText}
+                        onChange={event => setQuickUpdateText(event.target.value)}
+                        placeholder="What changed since your last update?"
+                        rows={3}
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                      />
+                      <button type="button" onClick={handleAddQuickUpdate} className="btn-secondary">
+                        Add update note
+                      </button>
+                      {(selectedPortfolio?.updates ?? []).length > 0 ? (
+                        <div className="space-y-2">
+                          {[...(selectedPortfolio?.updates ?? [])]
+                            .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+                            .slice(0, 3)
+                            .map((note, index) => (
+                              <p key={`${note.createdAt}-${index}`} className="rounded-lg bg-white px-3 py-2 text-sm text-slate-700">
+                                {note.text}
+                              </p>
+                            ))}
+                        </div>
+                      ) : null}
+                    </div>
+
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      <button type="button" onClick={exportToPdf} className="btn-primary">
+                        Export PDF
+                      </button>
+                      <button
+                        type="button"
+                        onClick={syncToGoogleSlides}
+                        disabled={isSyncingSlides}
+                        className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
+                      >
+                        {isSyncingSlides ? "Syncing to Google Slides..." : "Sync to My Google Slides Deck"}
+                      </button>
+                    </div>
+                    <label className="flex items-start gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+                      <input
+                        type="checkbox"
+                        checked={startNewDeck}
+                        onChange={event => setStartNewDeck(event.target.checked)}
+                        className="mt-1 size-4 accent-blue-600"
+                      />
+                      <span>Start a new Slides deck this time</span>
+                    </label>
+                    <p className="text-sm text-slate-500">
+                      First time using Slides? Connect Google Drive once before syncing.
+                    </p>
+                    <Link
+                      href="/api/google/connect"
+                      className="btn-secondary inline-flex w-full items-center justify-center rounded-2xl"
+                    >
+                      Connect Google Drive
+                    </Link>
+                    {slidesIntegration?.deckUrl ? (
+                      <p className="rounded-xl bg-teal-50 px-3 py-2 text-sm font-semibold text-teal-700">
+                        Linked deck:{" "}
+                        <a href={slidesIntegration.deckUrl} target="_blank" rel="noreferrer" className="underline">
+                          Open Google Slides
+                        </a>
+                      </p>
+                    ) : null}
+                  </div>
+                ) : null}
+              </details>
+            );
+          })}
         </div>
       ) : null}
 

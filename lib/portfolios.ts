@@ -6,7 +6,6 @@ import {
   collection,
   doc,
   onSnapshot,
-  orderBy,
   query,
   serverTimestamp,
   updateDoc,
@@ -32,15 +31,18 @@ export function subscribeToStudentPortfolios(
   onNext: (portfolios: Portfolio[]) => void,
   onError: (error: Error) => void
 ) {
-  const q = query(
-    portfoliosCollection,
-    where("userId", "==", userId),
-    orderBy("updatedAt", "desc")
-  );
+  const q = query(portfoliosCollection, where("userId", "==", userId));
   return onSnapshot(
     q,
     snapshot => {
-      onNext(snapshot.docs.map(item => ({ id: item.id, ...item.data() }) as Portfolio));
+      const data = snapshot.docs
+        .map(item => ({ id: item.id, ...item.data() }) as Portfolio)
+        .sort((a, b) => {
+          const aTime = a.updatedAt?.toDate?.().getTime() ?? 0;
+          const bTime = b.updatedAt?.toDate?.().getTime() ?? 0;
+          return bTime - aTime;
+        });
+      onNext(data);
     },
     onError
   );
