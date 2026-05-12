@@ -4,6 +4,7 @@ import {
   arrayUnion,
   addDoc,
   collection,
+  deleteDoc,
   doc,
   getDocs,
   onSnapshot,
@@ -17,7 +18,9 @@ import {
   type DocumentData,
   type QueryDocumentSnapshot
 } from "firebase/firestore";
+import { deleteObject, ref as storageRef } from "firebase/storage";
 import { db } from "@/lib/firebase";
+import { storage } from "@/lib/firebase";
 import type { NewReflection, Reflection } from "@/types/reflection";
 
 const reflectionsCollection = collection(db, "reflections");
@@ -43,6 +46,16 @@ export async function addReflectionFollowUp(reflectionId: string, text: string) 
       createdAt: new Date().toISOString()
     })
   });
+}
+
+export async function deleteReflection(reflection: Reflection) {
+  const reflectionRef = doc(db, "reflections", reflection.id);
+
+  const imageDeletions = (reflection.images ?? []).map(image =>
+    deleteObject(storageRef(storage, image.path)).catch(() => undefined)
+  );
+  await Promise.all(imageDeletions);
+  await deleteDoc(reflectionRef);
 }
 
 export function subscribeToStudentReflections(

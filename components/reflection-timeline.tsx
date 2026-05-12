@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import {
   addReflectionFollowUp,
+  deleteReflection,
   fetchStudentReflectionsPage
 } from "@/lib/reflections";
 import type { Reflection } from "@/types/reflection";
@@ -33,6 +34,9 @@ export function ReflectionTimeline() {
   const [noteText, setNoteText] = useState("");
   const [noteStatus, setNoteStatus] = useState<"idle" | "saving" | "error">("idle");
   const [noteError, setNoteError] = useState("");
+  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [deleteSuccess, setDeleteSuccess] = useState("");
   const [selectedMonthKey, setSelectedMonthKey] = useState("all");
 
   useEffect(() => {
@@ -66,6 +70,12 @@ export function ReflectionTimeline() {
     };
   }, [user]);
 
+  useEffect(() => {
+    if (!deleteSuccess) return;
+    const timeout = window.setTimeout(() => setDeleteSuccess(""), 2600);
+    return () => window.clearTimeout(timeout);
+  }, [deleteSuccess]);
+
   const expandedReflection =
     reflections.find(reflection => reflection.id === expandedReflectionId) ?? null;
 
@@ -97,6 +107,25 @@ export function ReflectionTimeline() {
       setError(message);
     } finally {
       setLoadingMore(false);
+    }
+  }
+
+  async function handleDeleteReflection(reflection: Reflection) {
+    setDeletingId(reflection.id);
+    setError("");
+    setDeleteSuccess("");
+    try {
+      await deleteReflection(reflection);
+      setReflections(current => current.filter(item => item.id !== reflection.id));
+      if (expandedReflectionId === reflection.id) {
+        setExpandedReflectionId(null);
+      }
+      setConfirmDeleteId(null);
+      setDeleteSuccess("Reflection deleted.");
+    } catch {
+      setError("Could not delete this reflection. Please try again.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -142,6 +171,11 @@ export function ReflectionTimeline() {
       {error ? (
         <div className="mt-5 rounded-2xl bg-oat p-4 text-sm leading-6 text-clay">
           {error}
+        </div>
+      ) : null}
+      {deleteSuccess ? (
+        <div className="mt-5 rounded-2xl bg-teal-50 px-4 py-3 text-sm font-semibold text-teal-700">
+          {deleteSuccess}
         </div>
       ) : null}
 
@@ -341,6 +375,47 @@ export function ReflectionTimeline() {
                                     {noteError}
                                   </p>
                                 ) : null}
+                              </div>
+
+                              <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-3">
+                                {confirmDeleteId === reflection.id ? (
+                                  <div className="space-y-3">
+                                    <p className="text-sm font-semibold text-rose-700">
+                                      Are you sure you want to delete this reflection?
+                                    </p>
+                                    <p className="text-xs text-rose-600">
+                                      This action cannot be undone.
+                                    </p>
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                      <button
+                                        type="button"
+                                        onClick={() => setConfirmDeleteId(null)}
+                                        disabled={deletingId === reflection.id}
+                                        className="btn-secondary disabled:cursor-not-allowed disabled:opacity-45"
+                                      >
+                                        Cancel
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => handleDeleteReflection(reflection)}
+                                        disabled={deletingId === reflection.id}
+                                        className="btn-tertiary border-rose-300 bg-rose-100 text-rose-700 disabled:cursor-not-allowed disabled:opacity-45"
+                                      >
+                                        {deletingId === reflection.id
+                                          ? "Deleting..."
+                                          : "Yes, delete reflection"}
+                                      </button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <button
+                                    type="button"
+                                    onClick={() => setConfirmDeleteId(reflection.id)}
+                                    className="btn-tertiary border-rose-300 bg-rose-100 text-rose-700"
+                                  >
+                                    Delete reflection
+                                  </button>
+                                )}
                               </div>
                             </div>
                           ) : null}
