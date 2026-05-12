@@ -116,6 +116,71 @@ async function addCoverSlide(
   }
 }
 
+async function addNarrativeSlide(
+  token: string,
+  deckId: string,
+  payload: SlidesExportPayload
+) {
+  const lines: string[] = [];
+  if (payload.portfolio.purpose) lines.push(`Purpose: ${payload.portfolio.purpose}`);
+  if (payload.portfolio.focusTags?.length) {
+    lines.push(`Focus: ${payload.portfolio.focusTags.join(", ")}`);
+  }
+  if (payload.portfolio.connectionText) {
+    lines.push(`Why these moments:\n${payload.portfolio.connectionText}`);
+  }
+  if (payload.portfolio.ipsativeText) {
+    lines.push(`Across time:\n${payload.portfolio.ipsativeText}`);
+  }
+  if (lines.length === 0) return;
+
+  const slideId = "meaning_slide";
+  const titleId = "meaning_title";
+  const bodyId = "meaning_body";
+  const requests: Record<string, unknown>[] = [
+    {
+      createSlide: {
+        objectId: slideId,
+        slideLayoutReference: { predefinedLayout: "TITLE_AND_BODY" },
+        placeholderIdMappings: [
+          {
+            layoutPlaceholder: { type: "TITLE", index: 0 },
+            objectId: titleId
+          },
+          {
+            layoutPlaceholder: { type: "BODY", index: 0 },
+            objectId: bodyId
+          }
+        ]
+      }
+    },
+    {
+      insertText: {
+        objectId: titleId,
+        insertionIndex: 0,
+        text: "Portfolio meaning"
+      }
+    },
+    {
+      insertText: {
+        objectId: bodyId,
+        insertionIndex: 0,
+        text: lines.join("\n\n")
+      }
+    }
+  ];
+
+  const response = await googleRequest(
+    `${GOOGLE_SLIDES_PRESENTATIONS}/${deckId}:batchUpdate`,
+    token,
+    { method: "POST", body: JSON.stringify({ requests }) }
+  );
+
+  if (!response.ok) {
+    throw new Error("We couldn't add your portfolio explanation slide. Please try again.");
+  }
+}
+
 async function appendReflectionSlide(
   token: string,
   deckId: string,
@@ -277,6 +342,7 @@ export async function POST(request: NextRequest) {
       deckId = created.deckId;
       deckUrl = created.deckUrl;
       await addCoverSlide(token, deckId, payload);
+      await addNarrativeSlide(token, deckId, payload);
     }
 
     let addedSlides = 0;

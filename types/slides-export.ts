@@ -25,6 +25,10 @@ export type SlidesExportPayload = {
   portfolio: {
     title: string;
     growthStatement: string;
+    purpose?: string;
+    focusTags?: string[];
+    connectionText?: string;
+    ipsativeText?: string;
   };
   reflections: SlidesExportReflection[];
 };
