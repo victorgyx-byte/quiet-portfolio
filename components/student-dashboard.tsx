@@ -32,7 +32,7 @@ export function StudentDashboard() {
           </div>
         </section>
       ) : null}
-      <div id="compose" className="scroll-mt-24">
+      <div id="compose" className="compose-anchor scroll-mt-40 sm:scroll-mt-32">
         <ReflectionForm />
       </div>
     </div>

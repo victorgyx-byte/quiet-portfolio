@@ -60,7 +60,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, signOut, isTeacher } = useAuth();
   const [mode, setMode] = useState<UiMode>("classic");
-  const showQuickAdd = pathname !== "/dashboard" && pathname !== "/teacher";
+  const showQuickAdd =
+    pathname !== "/dashboard" && pathname !== "/teacher" && pathname !== "/portfolio";
   const mobileLinks = links.filter(link => (link.href === "/teacher" ? isTeacher : true));
 
   useEffect(() => {
