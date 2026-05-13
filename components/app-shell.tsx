@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { UiModeContext, type UiMode } from "@/components/ui-mode";
@@ -58,6 +58,7 @@ function NavIcon({ href, active }: { href: string; active: boolean }) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const { user, signOut, isTeacher } = useAuth();
   const [mode, setMode] = useState<UiMode>("classic");
   const showQuickAdd =
@@ -83,6 +84,11 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
   function isActivePath(href: string) {
     return pathname === href || pathname.startsWith(`${href}/`);
+  }
+
+  async function handleSignOut() {
+    await signOut();
+    router.push("/");
   }
 
   return (
@@ -129,7 +135,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             </nav>
             {user ? (
               <button
-                onClick={signOut}
+                onClick={handleSignOut}
                 className="sign-out-button rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-500 transition hover:text-slate-800 sm:px-4"
               >
                 Sign out
