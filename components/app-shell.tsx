@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { UiModeContext, type UiMode } from "@/components/ui-mode";
 
@@ -60,25 +60,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, signOut, isTeacher } = useAuth();
-  const [mode, setMode] = useState<UiMode>("studio");
+  const mode: UiMode = "studio";
   const showQuickAdd =
     pathname !== "/dashboard" && pathname !== "/teacher" && pathname !== "/portfolio";
   const mobileLinks = links.filter(link => (link.href === "/teacher" ? isTeacher : true));
 
   useEffect(() => {
-    const stored = localStorage.getItem("sc_ui_mode");
-    const nextMode = stored === "classic" ? "classic" : "studio";
-    setMode(nextMode);
+    localStorage.removeItem("sc_ui_mode");
     localStorage.removeItem("sc_theme");
     document.documentElement.removeAttribute("data-theme");
-    document.documentElement.setAttribute("data-ui-mode", nextMode);
+    document.documentElement.setAttribute("data-ui-mode", "studio");
   }, []);
 
   function handleModeChange(nextMode: UiMode) {
-    setMode(nextMode);
-    localStorage.setItem("sc_ui_mode", nextMode);
-    localStorage.removeItem("sc_theme");
-    document.documentElement.removeAttribute("data-theme");
     document.documentElement.setAttribute("data-ui-mode", nextMode);
   }
 
@@ -99,23 +93,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <Link href="/" className="app-brand text-sm font-black uppercase tracking-[0.08em] text-slate-800">
               Student's Companion
             </Link>
-            <div className="ui-mode-switch hidden items-center rounded-full border border-slate-200 bg-white p-1 sm:flex">
-              {([
-                ["classic", "Classic"],
-                ["studio", "Studio"]
-              ] as const).map(([id, label]) => (
-                <button
-                  key={id}
-                  type="button"
-                  onClick={() => handleModeChange(id)}
-                  className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
-                    mode === id ? "bg-slate-900 text-white" : "text-slate-500"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
             <nav className="desktop-nav hidden items-center gap-1 rounded-full border border-slate-200 bg-white p-1 sm:flex">
               {links.map(link => {
                 if (link.href === "/teacher" && !isTeacher) return null;
@@ -153,26 +130,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             +
           </Link>
         ) : null}
-
-        <div className="mobile-mode-switch fixed bottom-[5.2rem] left-1/2 z-20 -translate-x-1/2 rounded-full border border-slate-200 bg-white/95 p-1 shadow-sm backdrop-blur sm:hidden">
-          <div className="flex items-center">
-            {([
-              ["classic", "Classic"],
-              ["studio", "Studio"]
-            ] as const).map(([id, label]) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => handleModeChange(id)}
-                className={`rounded-full px-3 py-1 text-[11px] font-semibold ${
-                  mode === id ? "bg-slate-900 text-white" : "text-slate-500"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-          </div>
-        </div>
 
         <nav className="mobile-nav fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white/95 px-3 pb-4 pt-2 backdrop-blur sm:hidden">
           <div className={`grid gap-2 ${mobileLinks.length === 4 ? "grid-cols-4" : "grid-cols-3"}`}>
