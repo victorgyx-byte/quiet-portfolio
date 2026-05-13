@@ -120,7 +120,6 @@ export function PortfolioBuilder() {
       setPortfolios(data);
       if (!selectedPortfolioId && data.length) {
         setSelectedPortfolioId(data[0].id);
-        setExpandedPortfolioId(data[0].id);
       }
     }, () => setStatusMessage("Could not load portfolios right now. Please refresh."));
   }, [user, selectedPortfolioId]);
