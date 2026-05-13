@@ -49,6 +49,68 @@ function formatDate(dateValue?: { toDate: () => Date }) {
   }).format(date);
 }
 
+function ReflectionReferenceList({
+  reflections,
+  selectedReflectionIds,
+  toggleReflection,
+  selectable = false
+}: {
+  reflections: Reflection[];
+  selectedReflectionIds: string[];
+  toggleReflection?: (id: string) => void;
+  selectable?: boolean;
+}) {
+  if (reflections.length === 0) {
+    return (
+      <div className="rounded-2xl border border-dashed border-slate-300 bg-white/50 p-4 text-sm text-slate-500">
+        No reflections yet.
+      </div>
+    );
+  }
+
+  return (
+    <div className="portfolio-reference-list max-h-80 space-y-2 overflow-auto pr-1">
+      {reflections.map(reflection => {
+        const checked = selectedReflectionIds.includes(reflection.id);
+        const content = (
+          <>
+            {selectable ? (
+              <input
+                type="checkbox"
+                checked={checked}
+                onChange={() => toggleReflection?.(reflection.id)}
+                className="mt-1 size-4 accent-orange-700"
+              />
+            ) : null}
+            <span className="min-w-0">
+              <span className="block text-sm font-semibold text-slate-900">{reflection.title}</span>
+              <span className="mt-1 block text-xs text-slate-500">
+                {reflection.competency} | {formatDate(reflection.createdAt)}
+              </span>
+              <span className="mt-2 block whitespace-pre-line text-xs leading-5 text-slate-500">
+                {reflection.body.length > 180 ? `${reflection.body.slice(0, 180)}...` : reflection.body}
+              </span>
+            </span>
+          </>
+        );
+
+        return selectable ? (
+          <label
+            key={reflection.id}
+            className={`portfolio-reference-item ${checked ? "selected" : ""}`}
+          >
+            {content}
+          </label>
+        ) : (
+          <article key={reflection.id} className="portfolio-reference-item selected">
+            {content}
+          </article>
+        );
+      })}
+    </div>
+  );
+}
+
 function addPageIfNeeded(doc: { addPage: () => void }, cursor: number, needed = 18) {
   const limit = 282;
   if (cursor + needed > limit) {
@@ -149,6 +211,7 @@ export function PortfolioBuilder() {
     () => reflections.filter(item => selectedReflectionIds.includes(item.id)),
     [reflections, selectedReflectionIds]
   );
+  const shouldShowSelectedReferences = isCreating && createStep >= 4 && selectedReflections.length > 0;
 
   const googleConnectStatus = searchParams.get("google_connect");
 
@@ -483,23 +546,36 @@ export function PortfolioBuilder() {
           {createStep === 3 ? (
             <div className="space-y-3">
               <h3 className="text-xl font-bold text-slate-900">Which moments help tell this story?</h3>
-              <div className={isStudio ? "studio-select-moments max-h-72 space-y-2 overflow-auto pr-1" : "max-h-72 space-y-2 overflow-auto pr-1"}>
-                {reflections.map(reflection => (
-                  <label key={reflection.id} className={isStudio ? "studio-choice-row" : "flex gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"}>
-                    <input
-                      type="checkbox"
-                      checked={selectedReflectionIds.includes(reflection.id)}
-                      onChange={() => toggleReflection(reflection.id)}
-                      className="mt-1 size-4 accent-blue-600"
-                    />
-                    <span>
-                      <span className="block text-sm font-semibold text-slate-900">{reflection.title}</span>
-                      <span className="text-xs text-slate-500">{formatDate(reflection.createdAt)}</span>
-                    </span>
-                  </label>
-                ))}
-              </div>
+              <p className="text-sm text-slate-500">
+                Pick moments you may want to refer to in the next steps.
+              </p>
+              <ReflectionReferenceList
+                reflections={reflections}
+                selectedReflectionIds={selectedReflectionIds}
+                toggleReflection={toggleReflection}
+                selectable
+              />
             </div>
+          ) : null}
+
+          {shouldShowSelectedReferences ? (
+            <aside className="portfolio-reference-panel">
+              <div className="flex items-center justify-between gap-3">
+                <p className="text-sm font-bold text-slate-900">Selected moments</p>
+                <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
+                  {selectedReflections.length}
+                </span>
+              </div>
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                Keep these nearby as evidence while you write.
+              </p>
+              <div className="mt-3">
+                <ReflectionReferenceList
+                  reflections={selectedReflections}
+                  selectedReflectionIds={selectedReflectionIds}
+                />
+              </div>
+            </aside>
           ) : null}
 
           {createStep === 4 ? (
