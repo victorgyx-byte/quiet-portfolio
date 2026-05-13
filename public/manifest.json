@@ -2,7 +2,7 @@
   "name": "Student's Companion",
   "short_name": "Companion",
   "description": "A student-owned reflection and portfolio companion.",
-  "start_url": "/dashboard",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",

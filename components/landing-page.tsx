@@ -1,6 +1,8 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { SignInButton } from "@/components/sign-in-button";
 
@@ -31,6 +33,13 @@ const sampleMoments = [
 
 export function LandingPage() {
   const { user, loading } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && user) {
+      router.replace("/dashboard");
+    }
+  }, [loading, router, user]);
 
   return (
     <main className="landing-studio min-h-screen overflow-hidden">
