@@ -16,6 +16,9 @@
   --accent-coral: #fb7185;
   --accent-mint: #14b8a6;
   --ring: rgba(37, 99, 235, 0.26);
+  --surface-soft: #f8fafc;
+  --surface-border: rgba(148, 163, 184, 0.26);
+  --card-radius: 24px;
 }
 
 * {
@@ -111,10 +114,58 @@ select {
   border: 1px solid rgba(148, 163, 184, 0.18);
   background: rgba(255, 255, 255, 0.88);
   backdrop-filter: blur(12px);
+  border-radius: var(--card-radius);
 }
 
 input:focus,
 textarea:focus,
 select:focus {
   box-shadow: 0 0 0 3px var(--ring);
+}
+
+input,
+textarea,
+select {
+  border-color: var(--surface-border) !important;
+  background: var(--surface-soft) !important;
+}
+
+html[data-theme="feed"] {
+  --bg-1: #e0ecff;
+  --bg-2: #cffafe;
+  --bg-3: #fff7ed;
+  --surface-soft: #f1f5ff;
+  --surface-border: rgba(96, 118, 170, 0.24);
+  --card-radius: 18px;
+}
+
+html[data-theme="chat"] {
+  --bg-1: #f2ecff;
+  --bg-2: #ecfeff;
+  --bg-3: #fff8f3;
+  --surface-soft: #f8f7ff;
+  --surface-border: rgba(137, 121, 184, 0.22);
+  --card-radius: 26px;
+}
+
+html[data-theme="editorial"] {
+  --bg-1: #f5f7fb;
+  --bg-2: #f8fafc;
+  --bg-3: #f8fafc;
+  --surface-soft: #ffffff;
+  --surface-border: rgba(15, 23, 42, 0.11);
+  --card-radius: 12px;
+}
+
+html[data-theme="editorial"] body {
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+html[data-theme="editorial"] .btn-primary {
+  border-radius: 10px;
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.16);
+}
+
+html[data-theme="editorial"] .btn-secondary {
+  border-radius: 10px;
 }

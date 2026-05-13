@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 
 const links = [
@@ -57,8 +58,25 @@ function NavIcon({ href, active }: { href: string; active: boolean }) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, signOut, isTeacher } = useAuth();
+  const [theme, setTheme] = useState<"feed" | "chat" | "editorial">("feed");
   const showQuickAdd = pathname !== "/dashboard" && pathname !== "/teacher";
   const mobileLinks = links.filter(link => (link.href === "/teacher" ? isTeacher : true));
+
+  useEffect(() => {
+    const stored = localStorage.getItem("sc_theme");
+    const nextTheme =
+      stored === "chat" || stored === "editorial" || stored === "feed"
+        ? stored
+        : "feed";
+    setTheme(nextTheme);
+    document.documentElement.setAttribute("data-theme", nextTheme);
+  }, []);
+
+  function handleThemeChange(nextTheme: "feed" | "chat" | "editorial") {
+    setTheme(nextTheme);
+    localStorage.setItem("sc_theme", nextTheme);
+    document.documentElement.setAttribute("data-theme", nextTheme);
+  }
 
   function isActivePath(href: string) {
     return pathname === href || pathname.startsWith(`${href}/`);
@@ -71,6 +89,24 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           <Link href="/" className="text-sm font-black uppercase tracking-[0.08em] text-slate-800">
             Student's Companion
           </Link>
+          <div className="hidden items-center rounded-full border border-slate-200 bg-white p-1 sm:flex">
+            {([
+              ["feed", "Feed"],
+              ["chat", "Chat"],
+              ["editorial", "Editorial"]
+            ] as const).map(([id, label]) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => handleThemeChange(id)}
+                className={`rounded-full px-3 py-1.5 text-xs font-semibold ${
+                  theme === id ? "bg-slate-900 text-white" : "text-slate-500"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
           <nav className="hidden items-center gap-1 rounded-full border border-slate-200 bg-white p-1 sm:flex">
             {links.map(link => {
               if (link.href === "/teacher" && !isTeacher) return null;
@@ -108,6 +144,27 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           +
         </Link>
       ) : null}
+
+      <div className="fixed bottom-[5.2rem] left-1/2 z-20 -translate-x-1/2 rounded-full border border-slate-200 bg-white/95 p-1 shadow-sm backdrop-blur sm:hidden">
+        <div className="flex items-center">
+          {([
+            ["feed", "Feed"],
+            ["chat", "Chat"],
+            ["editorial", "Edit"]
+          ] as const).map(([id, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => handleThemeChange(id)}
+              className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${
+                theme === id ? "bg-slate-900 text-white" : "text-slate-500"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
+      </div>
 
       <nav className="fixed bottom-0 left-0 right-0 z-20 border-t border-slate-200 bg-white/95 px-3 pb-4 pt-2 backdrop-blur sm:hidden">
         <div className={`grid gap-2 ${mobileLinks.length === 4 ? "grid-cols-4" : "grid-cols-3"}`}>
