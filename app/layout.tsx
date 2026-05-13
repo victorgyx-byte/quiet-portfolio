@@ -15,7 +15,18 @@ const spaceGrotesk = Space_Grotesk({
 
 export const metadata: Metadata = {
   title: "Student's Companion",
-  description: "A calm student-owned reflection portfolio for secondary school learners."
+  description: "A calm student-owned reflection portfolio for secondary school learners.",
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/icon.svg",
+    apple: "/icon.svg"
+  },
+  appleWebApp: {
+    capable: true,
+    title: "Student's Companion",
+    statusBarStyle: "default"
+  },
+  themeColor: "#c95f3d"
 };
 
 export default function RootLayout({

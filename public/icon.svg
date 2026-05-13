@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Student's Companion icon">
+  <rect width="512" height="512" rx="112" fill="#fff7ec"/>
+  <path d="M96 120c0-26.5 21.5-48 48-48h224c26.5 0 48 21.5 48 48v272c0 26.5-21.5 48-48 48H144c-26.5 0-48-21.5-48-48V120Z" fill="#f6c58f"/>
+  <path d="M136 148c0-20 16-36 36-36h168c20 0 36 16 36 36v212c0 20-16 36-36 36H172c-20 0-36-16-36-36V148Z" fill="#fff8ef"/>
+  <path d="M170 181h172" stroke="#3a281f" stroke-width="22" stroke-linecap="round"/>
+  <path d="M170 237h122" stroke="#c95f3d" stroke-width="22" stroke-linecap="round"/>
+  <path d="M170 293h158" stroke="#8f3f2b" stroke-width="22" stroke-linecap="round"/>
+  <circle cx="356" cy="334" r="46" fill="#3a281f"/>
+  <path d="M337 334h38M356 315v38" stroke="#fff6ea" stroke-width="16" stroke-linecap="round"/>
+</svg>
