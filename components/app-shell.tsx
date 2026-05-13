@@ -67,12 +67,16 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     const stored = localStorage.getItem("sc_ui_mode");
     const nextMode = stored === "studio" ? "studio" : "classic";
     setMode(nextMode);
+    localStorage.removeItem("sc_theme");
+    document.documentElement.removeAttribute("data-theme");
     document.documentElement.setAttribute("data-ui-mode", nextMode);
   }, []);
 
   function handleModeChange(nextMode: UiMode) {
     setMode(nextMode);
     localStorage.setItem("sc_ui_mode", nextMode);
+    localStorage.removeItem("sc_theme");
+    document.documentElement.removeAttribute("data-theme");
     document.documentElement.setAttribute("data-ui-mode", nextMode);
   }
 

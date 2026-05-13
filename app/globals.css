@@ -723,6 +723,22 @@ html[data-theme="canvas"] [class*="text-slate-900"] {
   color: #3f2a1f !important;
 }
 
+html[data-ui-mode="studio"] .page-hero.bg-sage,
+html[data-ui-mode="studio"] .page-hero.bg-moss {
+  border: 0 !important;
+  border-radius: 0 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+  color: #35231a !important;
+}
+
+html[data-ui-mode="studio"] .page-hero.bg-sage p,
+html[data-ui-mode="studio"] .page-hero.bg-moss p,
+html[data-ui-mode="studio"] .page-hero.bg-sage h1,
+html[data-ui-mode="studio"] .page-hero.bg-moss h1 {
+  color: inherit !important;
+}
+
 .landing-studio {
   background:
     linear-gradient(135deg, rgba(255, 217, 181, 0.92) 0%, transparent 34%),
