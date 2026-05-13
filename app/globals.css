@@ -414,13 +414,7 @@ html[data-ui-mode="studio"] .btn-secondary {
 }
 
 .studio-capture-card::before {
-  content: "";
-  position: absolute;
-  inset: -0.75rem -0.5rem auto -0.5rem;
-  height: 11rem;
-  border-radius: 32px;
-  opacity: 0.52;
-  pointer-events: none;
+  content: none;
 }
 
 .studio-capture-card > * {
@@ -428,27 +422,19 @@ html[data-ui-mode="studio"] .btn-secondary {
 }
 
 .studio-step-capture::before {
-  background:
-    linear-gradient(140deg, rgba(255, 216, 178, 0.72), rgba(255, 248, 239, 0.16)),
-    radial-gradient(circle at 100% 0%, rgba(216, 96, 54, 0.16), transparent 42%);
+  background: none;
 }
 
 .studio-step-meaning::before {
-  background:
-    linear-gradient(140deg, rgba(255, 236, 183, 0.72), rgba(255, 250, 241, 0.16)),
-    radial-gradient(circle at 100% 10%, rgba(50, 118, 105, 0.14), transparent 42%);
+  background: none;
 }
 
 .studio-step-growth::before {
-  background:
-    linear-gradient(140deg, rgba(220, 240, 255, 0.72), rgba(255, 250, 244, 0.16)),
-    radial-gradient(circle at 100% 10%, rgba(57, 92, 199, 0.16), transparent 42%);
+  background: none;
 }
 
 .studio-step-visibility::before {
-  background:
-    linear-gradient(140deg, rgba(235, 225, 255, 0.72), rgba(255, 250, 244, 0.16)),
-    radial-gradient(circle at 100% 10%, rgba(126, 91, 196, 0.16), transparent 42%);
+  background: none;
 }
 
 .studio-kicker {
