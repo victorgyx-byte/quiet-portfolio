@@ -169,3 +169,146 @@ html[data-theme="editorial"] .btn-primary {
 html[data-theme="editorial"] .btn-secondary {
   border-radius: 10px;
 }
+
+html[data-theme="canvas"] {
+  --bg-1: #ffe7d1;
+  --bg-2: #dff4ef;
+  --bg-3: #f7f1e8;
+  --surface-soft: rgba(255, 251, 245, 0.78);
+  --surface-border: rgba(150, 119, 91, 0.22);
+  --card-radius: 30px;
+  --primary: #cb6b43;
+  --primary-2: #a95233;
+  --ring: rgba(203, 107, 67, 0.22);
+}
+
+html[data-theme="canvas"] body {
+  background:
+    radial-gradient(circle at 14% 10%, rgba(255, 203, 157, 0.7) 0%, transparent 20rem),
+    radial-gradient(circle at 85% 18%, rgba(171, 223, 211, 0.72) 0%, transparent 24rem),
+    radial-gradient(circle at 50% 100%, rgba(255, 233, 203, 0.58) 0%, transparent 24rem),
+    linear-gradient(180deg, #fffaf3 0%, #f7efe6 100%);
+}
+
+html[data-theme="canvas"] .glass-card {
+  border: 1px solid rgba(181, 145, 117, 0.18);
+  background:
+    linear-gradient(180deg, rgba(255, 251, 247, 0.9) 0%, rgba(255, 247, 240, 0.82) 100%);
+  box-shadow:
+    0 24px 60px rgba(120, 76, 42, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  backdrop-filter: blur(18px);
+}
+
+html[data-theme="canvas"] .display-title,
+html[data-theme="canvas"] h1,
+html[data-theme="canvas"] h2,
+html[data-theme="canvas"] h3,
+html[data-theme="canvas"] h4 {
+  color: #3f2a1f;
+}
+
+html[data-theme="canvas"] .btn-primary {
+  border-radius: 18px;
+  background: linear-gradient(135deg, #cf7248 0%, #a44f31 100%);
+  box-shadow:
+    0 16px 36px rgba(164, 79, 49, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.16);
+}
+
+html[data-theme="canvas"] .btn-primary:hover {
+  background: linear-gradient(135deg, #d27a53 0%, #9a472c 100%);
+}
+
+html[data-theme="canvas"] .btn-secondary {
+  border-radius: 18px;
+  border-color: rgba(155, 122, 94, 0.18);
+  background: rgba(255, 248, 242, 0.82);
+  color: #5f4638;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
+}
+
+html[data-theme="canvas"] .btn-tertiary {
+  border-radius: 14px;
+  background: rgba(255, 251, 247, 0.88);
+}
+
+html[data-theme="canvas"] input,
+html[data-theme="canvas"] textarea,
+html[data-theme="canvas"] select {
+  border-width: 0 0 1.5px 0 !important;
+  border-radius: 0 !important;
+  border-color: rgba(124, 92, 71, 0.24) !important;
+  background: rgba(255, 255, 255, 0.08) !important;
+  padding-left: 0.25rem !important;
+  padding-right: 0.25rem !important;
+  box-shadow: none !important;
+}
+
+html[data-theme="canvas"] input:focus,
+html[data-theme="canvas"] textarea:focus,
+html[data-theme="canvas"] select:focus {
+  border-color: rgba(203, 107, 67, 0.72) !important;
+  background: rgba(255, 255, 255, 0.22) !important;
+}
+
+html[data-theme="canvas"] header,
+html[data-theme="canvas"] nav {
+  background: rgba(255, 249, 243, 0.84) !important;
+  border-color: rgba(171, 140, 115, 0.16) !important;
+}
+
+html[data-theme="canvas"] .bg-sage,
+html[data-theme="canvas"] .bg-moss {
+  background:
+    linear-gradient(135deg, rgba(255, 239, 219, 0.95) 0%, rgba(233, 245, 239, 0.95) 100%) !important;
+  color: #4e382c !important;
+  border: 1px solid rgba(175, 142, 113, 0.18);
+  box-shadow:
+    0 20px 44px rgba(140, 102, 77, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.52);
+}
+
+html[data-theme="canvas"] .bg-sage p,
+html[data-theme="canvas"] .bg-moss p,
+html[data-theme="canvas"] .bg-sage h1,
+html[data-theme="canvas"] .bg-moss h1 {
+  color: inherit !important;
+}
+
+html[data-theme="canvas"] details,
+html[data-theme="canvas"] article,
+html[data-theme="canvas"] form.rounded-3xl,
+html[data-theme="canvas"] section.rounded-3xl,
+html[data-theme="canvas"] div.rounded-3xl,
+html[data-theme="canvas"] div.rounded-2xl {
+  box-shadow:
+    0 20px 42px rgba(133, 99, 73, 0.1),
+    0 3px 0 rgba(255, 255, 255, 0.42) inset;
+}
+
+html[data-theme="canvas"] [class*="bg-slate-50"],
+html[data-theme="canvas"] [class*="bg-white"] {
+  background-color: rgba(255, 251, 246, 0.86) !important;
+}
+
+html[data-theme="canvas"] [class*="border-slate-200"] {
+  border-color: rgba(175, 142, 113, 0.18) !important;
+}
+
+html[data-theme="canvas"] [class*="text-slate-500"] {
+  color: #7c6658 !important;
+}
+
+html[data-theme="canvas"] [class*="text-slate-600"] {
+  color: #6d5547 !important;
+}
+
+html[data-theme="canvas"] [class*="text-slate-700"] {
+  color: #533c30 !important;
+}
+
+html[data-theme="canvas"] [class*="text-slate-800"],
+html[data-theme="canvas"] [class*="text-slate-900"] {
+  color: #3f2a1f !important;
+}

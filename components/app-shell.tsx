@@ -58,21 +58,21 @@ function NavIcon({ href, active }: { href: string; active: boolean }) {
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const { user, signOut, isTeacher } = useAuth();
-  const [theme, setTheme] = useState<"feed" | "chat" | "editorial">("feed");
+  const [theme, setTheme] = useState<"feed" | "chat" | "editorial" | "canvas">("feed");
   const showQuickAdd = pathname !== "/dashboard" && pathname !== "/teacher";
   const mobileLinks = links.filter(link => (link.href === "/teacher" ? isTeacher : true));
 
   useEffect(() => {
     const stored = localStorage.getItem("sc_theme");
     const nextTheme =
-      stored === "chat" || stored === "editorial" || stored === "feed"
+      stored === "chat" || stored === "editorial" || stored === "feed" || stored === "canvas"
         ? stored
         : "feed";
     setTheme(nextTheme);
     document.documentElement.setAttribute("data-theme", nextTheme);
   }, []);
 
-  function handleThemeChange(nextTheme: "feed" | "chat" | "editorial") {
+  function handleThemeChange(nextTheme: "feed" | "chat" | "editorial" | "canvas") {
     setTheme(nextTheme);
     localStorage.setItem("sc_theme", nextTheme);
     document.documentElement.setAttribute("data-theme", nextTheme);
@@ -93,7 +93,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {([
               ["feed", "Feed"],
               ["chat", "Chat"],
-              ["editorial", "Editorial"]
+              ["editorial", "Editorial"],
+              ["canvas", "Canvas"]
             ] as const).map(([id, label]) => (
               <button
                 key={id}
@@ -150,7 +151,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           {([
             ["feed", "Feed"],
             ["chat", "Chat"],
-            ["editorial", "Edit"]
+            ["editorial", "Edit"],
+            ["canvas", "Canvas"]
           ] as const).map(([id, label]) => (
             <button
               key={id}
