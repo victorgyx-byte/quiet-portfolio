@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { createStudentNotification } from "@/lib/notifications";
+import { subscribeToReflectionStats } from "@/lib/reflection-stats";
 import { addTeacherFeedback, subscribeToTeacherReflections } from "@/lib/reflections";
+import type { ReflectionStat } from "@/types/reflection-stats";
 import type { Reflection } from "@/types/reflection";
 
 type TeacherTab = "shared" | "trends" | "notifications";
@@ -25,7 +27,9 @@ function getStudentKey(reflection: Reflection) {
 export function TeacherDashboard({ activeTab = "shared" }: { activeTab?: TeacherTab }) {
   const { user } = useAuth();
   const [reflections, setReflections] = useState<Reflection[]>([]);
+  const [stats, setStats] = useState<ReflectionStat[]>([]);
   const [error, setError] = useState("");
+  const [statsError, setStatsError] = useState("");
   const [studentFilter, setStudentFilter] = useState("all");
   const [competencyFilter, setCompetencyFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -43,6 +47,13 @@ export function TeacherDashboard({ activeTab = "shared" }: { activeTab?: Teacher
     return subscribeToTeacherReflections(
       setReflections,
       currentError => setError(currentError.message)
+    );
+  }, []);
+
+  useEffect(() => {
+    return subscribeToReflectionStats(
+      setStats,
+      currentError => setStatsError(currentError.message)
     );
   }, []);
 
@@ -94,24 +105,30 @@ export function TeacherDashboard({ activeTab = "shared" }: { activeTab?: Teacher
 
   const competencyTrends = useMemo(
     () =>
-      competencies
+      [...new Set(stats.map(stat => stat.competency))]
         .map(competency => ({
           competency,
-          count: reflections.filter(reflection => reflection.competency === competency).length
+          count: stats.filter(stat => stat.competency === competency).length
         }))
         .sort((a, b) => b.count - a.count),
-    [competencies, reflections]
+    [stats]
   );
 
   const categoryTrends = useMemo(() => {
-    const categories = [...new Set(reflections.map(reflection => reflection.category))];
+    const categories = [...new Set(stats.map(stat => stat.category))];
     return categories
       .map(category => ({
         category,
-        count: reflections.filter(reflection => reflection.category === category).length
+        count: stats.filter(stat => stat.category === category).length
       }))
       .sort((a, b) => b.count - a.count);
-  }, [reflections]);
+  }, [stats]);
+
+  const visibilityTrends = useMemo(() => {
+    const shared = stats.filter(stat => stat.visibility === "shared_with_teacher").length;
+    const privateCount = stats.filter(stat => stat.visibility === "private").length;
+    return { shared, private: privateCount, total: shared + privateCount };
+  }, [stats]);
 
   const maxTrendCount = Math.max(
     1,
@@ -167,8 +184,8 @@ export function TeacherDashboard({ activeTab = "shared" }: { activeTab?: Teacher
 
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
-          <p className="text-xs font-semibold text-slate-500">Shared</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{reflections.length}</p>
+          <p className="text-xs font-semibold text-slate-500">Class trend</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{stats.length}</p>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
           <p className="text-xs font-semibold text-slate-500">Students</p>
@@ -368,10 +385,30 @@ export function TeacherDashboard({ activeTab = "shared" }: { activeTab?: Teacher
           <div>
             <h2 className="text-2xl font-bold text-slate-900">Overall trend</h2>
             <p className="mt-2 max-w-2xl text-sm leading-6 text-slate-600">
-              This view uses only reflections students made visible to teachers. Private
-              reflection text and images should stay private; a future aggregate-only
-              collection can count private entries without exposing incidents.
+              This view includes anonymous class-wide counts from all reflections. Private
+              reflection titles, text, images, names, and individual activity are not shown.
             </p>
+          </div>
+
+          {statsError ? (
+            <div className="mt-5 rounded-2xl bg-rose-50 p-4 text-sm leading-6 text-rose-700">
+              {statsError}
+            </div>
+          ) : null}
+
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-semibold text-slate-500">Total reflections</p>
+              <p className="mt-2 text-3xl font-bold text-slate-900">{visibilityTrends.total}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-semibold text-slate-500">Shared</p>
+              <p className="mt-2 text-3xl font-bold text-slate-900">{visibilityTrends.shared}</p>
+            </div>
+            <div className="rounded-2xl border border-slate-200 bg-white p-4">
+              <p className="text-xs font-semibold text-slate-500">Private counted</p>
+              <p className="mt-2 text-3xl font-bold text-slate-900">{visibilityTrends.private}</p>
+            </div>
           </div>
 
           <div className="mt-5 grid gap-4 lg:grid-cols-2">

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { useUiMode } from "@/components/ui-mode";
+import { createReflectionStat } from "@/lib/reflection-stats";
 import { createReflection } from "@/lib/reflections";
 import { uploadReflectionImages } from "@/lib/storage";
 import type { ReflectionVisibility } from "@/types/reflection";
@@ -150,6 +151,12 @@ export function ReflectionForm() {
         competency,
         visibility,
         images
+      });
+      await createReflectionStat({
+        competency,
+        category,
+        visibility,
+        monthKey: new Date().toISOString().slice(0, 7)
       });
 
       setStatus("saved");
