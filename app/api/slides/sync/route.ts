@@ -6,6 +6,19 @@ import type {
 } from "@/types/slides-export";
 
 const GOOGLE_SLIDES_PRESENTATIONS = "https://slides.googleapis.com/v1/presentations";
+const SLIDE_WIDTH = 9144000;
+const SLIDE_HEIGHT = 5143500;
+const INCH = 914400;
+
+const COLORS = {
+  paper: { red: 1, green: 0.968, blue: 0.925 },
+  paperDeep: { red: 1, green: 0.91, blue: 0.82 },
+  peach: { red: 0.97, green: 0.77, blue: 0.56 },
+  clay: { red: 0.79, green: 0.37, blue: 0.24 },
+  ink: { red: 0.23, green: 0.157, blue: 0.122 },
+  muted: { red: 0.48, green: 0.384, blue: 0.322 },
+  cream: { red: 1, green: 0.988, blue: 0.965 }
+};
 
 type SyncRequestBody = {
   payload?: SlidesExportPayload;
@@ -51,56 +64,224 @@ async function createDeck(token: string, title: string) {
   if (!response.ok) {
     throw new Error("We couldn't create your Google Slides deck yet. Please try again.");
   }
-  const data = (await response.json()) as { presentationId: string };
+  const data = (await response.json()) as {
+    presentationId: string;
+    slides?: Array<{ objectId: string }>;
+  };
   return {
     deckId: data.presentationId,
-    deckUrl: `https://docs.google.com/presentation/d/${data.presentationId}/edit`
+    deckUrl: `https://docs.google.com/presentation/d/${data.presentationId}/edit`,
+    defaultSlideId: data.slides?.[0]?.objectId ?? ""
+  };
+}
+
+function emu(value: number) {
+  return Math.round(value * INCH);
+}
+
+function box(
+  pageObjectId: string,
+  objectId: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number
+) {
+  return {
+    createShape: {
+      objectId,
+      shapeType: "TEXT_BOX",
+      elementProperties: {
+        pageObjectId,
+        size: {
+          width: { magnitude: emu(w), unit: "EMU" },
+          height: { magnitude: emu(h), unit: "EMU" }
+        },
+        transform: {
+          scaleX: 1,
+          scaleY: 1,
+          translateX: emu(x),
+          translateY: emu(y),
+          unit: "EMU"
+        }
+      }
+    }
+  };
+}
+
+function roundedRect(
+  pageObjectId: string,
+  objectId: string,
+  x: number,
+  y: number,
+  w: number,
+  h: number,
+  color: keyof typeof COLORS
+) {
+  return [
+    {
+      createShape: {
+        objectId,
+        shapeType: "ROUND_RECTANGLE",
+        elementProperties: {
+          pageObjectId,
+          size: {
+            width: { magnitude: emu(w), unit: "EMU" },
+            height: { magnitude: emu(h), unit: "EMU" }
+          },
+          transform: {
+            scaleX: 1,
+            scaleY: 1,
+            translateX: emu(x),
+            translateY: emu(y),
+            unit: "EMU"
+          }
+        }
+      }
+    },
+    {
+      updateShapeProperties: {
+        objectId,
+        shapeProperties: {
+          shapeBackgroundFill: {
+            solidFill: {
+              color: { rgbColor: COLORS[color] }
+            }
+          },
+          outline: { propertyState: "NOT_RENDERED" }
+        },
+        fields: "shapeBackgroundFill.solidFill.color,outline.propertyState"
+      }
+    }
+  ];
+}
+
+function insertStyledText(
+  objectId: string,
+  text: string,
+  options: {
+    size: number;
+    color?: keyof typeof COLORS;
+    bold?: boolean;
+  }
+) {
+  return [
+    {
+      insertText: {
+        objectId,
+        insertionIndex: 0,
+        text
+      }
+    },
+    {
+      updateTextStyle: {
+        objectId,
+        textRange: { type: "ALL" },
+        style: {
+          fontFamily: "Arial",
+          fontSize: { magnitude: options.size, unit: "PT" },
+          foregroundColor: {
+            opaqueColor: { rgbColor: COLORS[options.color ?? "ink"] }
+          },
+          bold: options.bold ?? false
+        },
+        fields: "fontFamily,fontSize,foregroundColor,bold"
+      }
+    }
+  ];
+}
+
+function setSlideBackground(slideId: string) {
+  return {
+    updatePageProperties: {
+      objectId: slideId,
+      pageProperties: {
+        pageBackgroundFill: {
+          solidFill: {
+            color: { rgbColor: COLORS.paper }
+          }
+        }
+      },
+      fields: "pageBackgroundFill.solidFill.color"
+    }
+  };
+}
+
+function createBlankSlide(slideId: string, insertionIndex?: number) {
+  return {
+    createSlide: {
+      objectId: slideId,
+      ...(typeof insertionIndex === "number" ? { insertionIndex } : {}),
+      slideLayoutReference: { predefinedLayout: "BLANK" }
+    }
+  };
+}
+
+function formatDateLabel(dateValue: string) {
+  if (!dateValue) return "Recent";
+  const date = new Date(dateValue);
+  if (Number.isNaN(date.getTime())) return "Recent";
+  return new Intl.DateTimeFormat("en", {
+    month: "short",
+    day: "numeric",
+    year: "numeric"
+  }).format(date);
+}
+
+function splitMomentBody(body: string) {
+  const momentMatch = body.match(/Moment:\n([\s\S]*?)(?:\n\nWhy this mattered:\n([\s\S]*))?$/);
+  if (!momentMatch) return { moment: body, meaning: "" };
+  return {
+    moment: momentMatch[1]?.trim() ?? body,
+    meaning: momentMatch[2]?.trim() ?? ""
   };
 }
 
 async function addCoverSlide(
   token: string,
   deckId: string,
-  payload: SlidesExportPayload
+  payload: SlidesExportPayload,
+  defaultSlideId?: string
 ) {
   const coverSlideId = "cover_slide";
+  const eyebrowId = "cover_eyebrow";
   const coverTitleId = "cover_title";
-  const coverBodyId = "cover_body";
+  const studentId = "cover_student";
+  const statementId = "cover_statement";
+  const accentId = "cover_accent";
   const subtitle = payload.portfolio.growthStatement.trim() || "Learning reflection";
 
   const requests: Record<string, unknown>[] = [
-    {
-      createSlide: {
-        objectId: coverSlideId,
-        insertionIndex: 0,
-        slideLayoutReference: { predefinedLayout: "TITLE_AND_BODY" },
-        placeholderIdMappings: [
-          {
-            layoutPlaceholder: { type: "TITLE", index: 0 },
-            objectId: coverTitleId
-          },
-          {
-            layoutPlaceholder: { type: "BODY", index: 0 },
-            objectId: coverBodyId
-          }
-        ]
-      }
-    },
-    {
-      insertText: {
-        objectId: coverTitleId,
-        insertionIndex: 0,
-        text: payload.portfolio.title
-      }
-    },
-    {
-      insertText: {
-        objectId: coverBodyId,
-        insertionIndex: 0,
-        text: `${payload.student.name}\n\n${subtitle}`
-      }
-    }
+    createBlankSlide(coverSlideId, 0),
+    setSlideBackground(coverSlideId),
+    ...roundedRect(coverSlideId, accentId, 6.25, 0.6, 2.55, 4.55, "peach"),
+    box(coverSlideId, eyebrowId, 0.65, 0.7, 5.3, 0.36),
+    ...insertStyledText(eyebrowId, "STUDENT PORTFOLIO", {
+      size: 12,
+      color: "muted",
+      bold: true
+    }),
+    box(coverSlideId, coverTitleId, 0.65, 1.25, 5.85, 1.8),
+    ...insertStyledText(coverTitleId, payload.portfolio.title, {
+      size: 34,
+      color: "ink",
+      bold: true
+    }),
+    box(coverSlideId, studentId, 0.72, 3.3, 3.8, 0.34),
+    ...insertStyledText(studentId, payload.student.name, {
+      size: 14,
+      color: "clay",
+      bold: true
+    }),
+    box(coverSlideId, statementId, 0.72, 3.8, 5.35, 0.9),
+    ...insertStyledText(statementId, subtitle, {
+      size: 16,
+      color: "muted"
+    })
   ];
+  if (defaultSlideId) {
+    requests.push({ deleteObject: { objectId: defaultSlideId } });
+  }
 
   const response = await googleRequest(
     `${GOOGLE_SLIDES_PRESENTATIONS}/${deckId}:batchUpdate`,
@@ -137,37 +318,29 @@ async function addNarrativeSlide(
   const slideId = "meaning_slide";
   const titleId = "meaning_title";
   const bodyId = "meaning_body";
+  const sideId = "meaning_side";
+  const eyebrowId = "meaning_eyebrow";
   const requests: Record<string, unknown>[] = [
-    {
-      createSlide: {
-        objectId: slideId,
-        slideLayoutReference: { predefinedLayout: "TITLE_AND_BODY" },
-        placeholderIdMappings: [
-          {
-            layoutPlaceholder: { type: "TITLE", index: 0 },
-            objectId: titleId
-          },
-          {
-            layoutPlaceholder: { type: "BODY", index: 0 },
-            objectId: bodyId
-          }
-        ]
-      }
-    },
-    {
-      insertText: {
-        objectId: titleId,
-        insertionIndex: 0,
-        text: "Portfolio meaning"
-      }
-    },
-    {
-      insertText: {
-        objectId: bodyId,
-        insertionIndex: 0,
-        text: lines.join("\n\n")
-      }
-    }
+    createBlankSlide(slideId),
+    setSlideBackground(slideId),
+    ...roundedRect(slideId, sideId, 0.45, 0.45, 2.2, 4.75, "paperDeep"),
+    box(slideId, eyebrowId, 0.75, 0.8, 2.6, 0.3),
+    ...insertStyledText(eyebrowId, "PORTFOLIO MEANING", {
+      size: 11,
+      color: "muted",
+      bold: true
+    }),
+    box(slideId, titleId, 0.75, 1.28, 2.85, 1.4),
+    ...insertStyledText(titleId, "Why these moments belong together", {
+      size: 23,
+      color: "ink",
+      bold: true
+    }),
+    box(slideId, bodyId, 3.3, 0.8, 5.85, 3.95),
+    ...insertStyledText(bodyId, lines.join("\n\n"), {
+      size: 13,
+      color: "muted"
+    })
   ];
 
   const response = await googleRequest(
@@ -189,71 +362,77 @@ async function appendReflectionSlide(
   const slideId = safeId("slide", reflection.reflectionId);
   const titleShapeId = safeId("title", reflection.reflectionId);
   const bodyShapeId = safeId("body", reflection.reflectionId);
+  const metaShapeId = safeId("meta", reflection.reflectionId);
+  const momentShapeId = safeId("moment", reflection.reflectionId);
+  const meaningShapeId = safeId("meaning", reflection.reflectionId);
+  const accentShapeId = safeId("accent", reflection.reflectionId);
 
-  const bodyText = `${reflection.body}\n\n${reflection.competency} | ${reflection.category} | ${reflection.createdAt || "Recent"}`;
+  const { moment, meaning } = splitMomentBody(reflection.body);
+  const metaText = `${reflection.competency}  |  ${reflection.category}  |  ${formatDateLabel(reflection.createdAt)}`;
 
   const requests: Record<string, unknown>[] = [
-    {
-      createSlide: {
-        objectId: slideId,
-        slideLayoutReference: { predefinedLayout: "TITLE_AND_BODY" },
-        placeholderIdMappings: [
-          {
-            layoutPlaceholder: { type: "TITLE", index: 0 },
-            objectId: titleShapeId
-          },
-          {
-            layoutPlaceholder: { type: "BODY", index: 0 },
-            objectId: bodyShapeId
-          }
-        ]
-      }
-    },
-    {
-      insertText: {
-        objectId: titleShapeId,
-        insertionIndex: 0,
-        text: reflection.title
-      }
-    },
-    {
-      insertText: {
-        objectId: bodyShapeId,
-        insertionIndex: 0,
-        text: bodyText
-      }
-    }
+    createBlankSlide(slideId),
+    setSlideBackground(slideId),
+    ...roundedRect(slideId, accentShapeId, 0.42, 0.42, 8.25, 0.32, "peach"),
+    box(slideId, metaShapeId, 0.55, 0.78, 8.5, 0.3),
+    ...insertStyledText(metaShapeId, metaText.toUpperCase(), {
+      size: 9,
+      color: "clay",
+      bold: true
+    }),
+    box(slideId, titleShapeId, 0.55, 1.18, 3.85, 0.95),
+    ...insertStyledText(titleShapeId, reflection.title, {
+      size: 22,
+      color: "ink",
+      bold: true
+    }),
+    box(slideId, momentShapeId, 0.58, 2.2, 3.65, 1.25),
+    ...insertStyledText(momentShapeId, `Moment\n${moment || reflection.title}`, {
+      size: 13,
+      color: "muted"
+    }),
+    box(slideId, meaningShapeId, 0.58, 3.65, 3.65, 1.05),
+    ...insertStyledText(meaningShapeId, meaning ? `Why this mattered\n${meaning}` : "", {
+      size: 13,
+      color: "muted"
+    }),
+    box(slideId, bodyShapeId, 0.55, 4.85, 3.65, 0.24),
+    ...insertStyledText(bodyShapeId, reflection.visibility === "private" ? "Private reflection" : "Shared with teacher", {
+      size: 9,
+      color: "muted",
+      bold: true
+    })
   ];
 
   const images = (reflection.images ?? []).slice(0, 5);
   if (images.length > 0) {
     const slotsByCount: Array<{ x: number; y: number; w: number; h: number }> =
       images.length === 1
-        ? [{ x: 3500000, y: 2500000, w: 4200000, h: 2300000 }]
+        ? [{ x: emu(4.65), y: emu(1.18), w: emu(4.45), h: emu(3.55) }]
         : images.length === 2
           ? [
-              { x: 3500000, y: 2100000, w: 2000000, h: 2000000 },
-              { x: 5700000, y: 2100000, w: 2000000, h: 2000000 }
+              { x: emu(4.65), y: emu(1.18), w: emu(2.15), h: emu(3.55) },
+              { x: emu(6.95), y: emu(1.18), w: emu(2.15), h: emu(3.55) }
             ]
           : images.length === 3
             ? [
-                { x: 3500000, y: 1800000, w: 2000000, h: 1600000 },
-                { x: 5700000, y: 1800000, w: 2000000, h: 1600000 },
-                { x: 4600000, y: 3600000, w: 2000000, h: 1600000 }
+                { x: emu(4.65), y: emu(1.18), w: emu(2.15), h: emu(1.7) },
+                { x: emu(6.95), y: emu(1.18), w: emu(2.15), h: emu(1.7) },
+                { x: emu(4.65), y: emu(3.05), w: emu(4.45), h: emu(1.68) }
               ]
             : images.length === 4
               ? [
-                  { x: 3500000, y: 1700000, w: 2000000, h: 1500000 },
-                  { x: 5700000, y: 1700000, w: 2000000, h: 1500000 },
-                  { x: 3500000, y: 3400000, w: 2000000, h: 1500000 },
-                  { x: 5700000, y: 3400000, w: 2000000, h: 1500000 }
+                  { x: emu(4.65), y: emu(1.18), w: emu(2.15), h: emu(1.7) },
+                  { x: emu(6.95), y: emu(1.18), w: emu(2.15), h: emu(1.7) },
+                  { x: emu(4.65), y: emu(3.05), w: emu(2.15), h: emu(1.68) },
+                  { x: emu(6.95), y: emu(3.05), w: emu(2.15), h: emu(1.68) }
                 ]
               : [
-                  { x: 3500000, y: 1500000, w: 2000000, h: 1300000 },
-                  { x: 5700000, y: 1500000, w: 2000000, h: 1300000 },
-                  { x: 3500000, y: 3000000, w: 2000000, h: 1300000 },
-                  { x: 5700000, y: 3000000, w: 2000000, h: 1300000 },
-                  { x: 4600000, y: 4500000, w: 2000000, h: 1300000 }
+                  { x: emu(4.65), y: emu(1.18), w: emu(1.38), h: emu(1.7) },
+                  { x: emu(6.1), y: emu(1.18), w: emu(1.38), h: emu(1.7) },
+                  { x: emu(7.55), y: emu(1.18), w: emu(1.55), h: emu(1.7) },
+                  { x: emu(4.65), y: emu(3.05), w: emu(2.15), h: emu(1.68) },
+                  { x: emu(6.95), y: emu(3.05), w: emu(2.15), h: emu(1.68) }
                 ];
 
     images.forEach((image, index) => {
@@ -341,7 +520,7 @@ export async function POST(request: NextRequest) {
       const created = await createDeck(token, payload.portfolio.title);
       deckId = created.deckId;
       deckUrl = created.deckUrl;
-      await addCoverSlide(token, deckId, payload);
+      await addCoverSlide(token, deckId, payload, created.defaultSlideId);
       await addNarrativeSlide(token, deckId, payload);
     }
 
