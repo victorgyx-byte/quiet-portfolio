@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useEffect } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { SignInButton } from "@/components/sign-in-button";
 
 export function ProtectedRoute({
   children,
@@ -12,6 +13,13 @@ export function ProtectedRoute({
   teacherOnly?: boolean;
 }) {
   const { user, loading, isTeacher } = useAuth();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.replace("/");
+    }
+  }, [loading, router, user]);
 
   if (loading) {
     return (
@@ -23,19 +31,8 @@ export function ProtectedRoute({
 
   if (!user) {
     return (
-      <div className="mx-auto grid min-h-[65vh] max-w-md place-items-center text-center">
-        <div>
-          <p className="text-sm font-semibold uppercase tracking-[0.14em] text-slate-500">
-            Sign in
-          </p>
-          <h1 className="mt-3 text-3xl font-bold text-slate-900">Your portfolio is private.</h1>
-          <p className="mt-3 text-sm leading-6 text-slate-600">
-            Use your school Google account to open your reflection space.
-          </p>
-          <div className="mt-6">
-            <SignInButton />
-          </div>
-        </div>
+      <div className="grid min-h-[60vh] place-items-center">
+        <div className="h-12 w-12 animate-pulse rounded-full bg-orange-200/60" />
       </div>
     );
   }
