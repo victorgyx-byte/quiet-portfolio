@@ -382,6 +382,33 @@ export function ReflectionTimeline() {
                                 ) : null}
                               </div>
 
+                              {(reflection.teacherFeedbackNotes ?? []).length > 0 ? (
+                                <div className={isStudio ? "studio-follow-up-panel" : "space-y-3 rounded-2xl border border-blue-200 bg-blue-50 p-3"}>
+                                  <p className="text-sm font-semibold text-blue-900">
+                                    Teacher feedback
+                                  </p>
+                                  {[...(reflection.teacherFeedbackNotes ?? [])]
+                                    .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+                                    .map((note, index) => (
+                                      <div
+                                        key={`${note.createdAt}-${index}`}
+                                        className="rounded-xl border border-blue-100 bg-white px-3 py-2"
+                                      >
+                                        <p className="text-sm leading-6 text-slate-700">{note.text}</p>
+                                        <p className="mt-1 text-xs text-slate-400">
+                                          {note.teacherName} /{" "}
+                                          {new Intl.DateTimeFormat("en", {
+                                            month: "short",
+                                            day: "numeric",
+                                            hour: "numeric",
+                                            minute: "2-digit"
+                                          }).format(new Date(note.createdAt))}
+                                        </p>
+                                      </div>
+                                    ))}
+                                </div>
+                              ) : null}
+
                               <div className={isStudio ? "studio-danger-panel" : "rounded-2xl border border-rose-200 bg-rose-50/70 p-3"}>
                                 {confirmDeleteId === reflection.id ? (
                                   <div className="space-y-3">

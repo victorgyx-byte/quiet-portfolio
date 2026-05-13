@@ -29,6 +29,7 @@ export function createReflection(reflection: NewReflection) {
   return addDoc(reflectionsCollection, {
     ...reflection,
     followUpNotes: reflection.followUpNotes ?? [],
+    teacherFeedbackNotes: reflection.teacherFeedbackNotes ?? [],
     createdAt: serverTimestamp()
   });
 }
@@ -43,6 +44,27 @@ export async function addReflectionFollowUp(reflectionId: string, text: string) 
   await updateDoc(reflectionRef, {
     followUpNotes: arrayUnion({
       text: trimmed,
+      createdAt: new Date().toISOString()
+    })
+  });
+}
+
+export async function addTeacherFeedback(
+  reflectionId: string,
+  text: string,
+  teacher: { name: string; email: string }
+) {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    throw new Error("Feedback is empty.");
+  }
+
+  const reflectionRef = doc(db, "reflections", reflectionId);
+  await updateDoc(reflectionRef, {
+    teacherFeedbackNotes: arrayUnion({
+      text: trimmed,
+      teacherName: teacher.name,
+      teacherEmail: teacher.email,
       createdAt: new Date().toISOString()
     })
   });

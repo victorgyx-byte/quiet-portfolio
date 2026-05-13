@@ -14,6 +14,13 @@ export type FollowUpNote = {
   createdAt: string;
 };
 
+export type TeacherFeedbackNote = {
+  text: string;
+  teacherName: string;
+  teacherEmail: string;
+  createdAt: string;
+};
+
 export type Reflection = {
   id: string;
   userId: string;
@@ -26,6 +33,7 @@ export type Reflection = {
   visibility: ReflectionVisibility;
   images: ReflectionImage[];
   followUpNotes?: FollowUpNote[];
+  teacherFeedbackNotes?: TeacherFeedbackNote[];
   createdAt?: Timestamp;
 };
 

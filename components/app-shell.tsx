@@ -62,8 +62,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const { user, signOut, isTeacher } = useAuth();
   const mode: UiMode = "studio";
   const showQuickAdd =
-    pathname !== "/dashboard" && pathname !== "/teacher" && pathname !== "/portfolio";
-  const mobileLinks = links.filter(link => (link.href === "/teacher" ? isTeacher : true));
+    !isTeacher &&
+    pathname !== "/dashboard" &&
+    pathname !== "/teacher" &&
+    pathname !== "/portfolio";
+  const visibleLinks = isTeacher
+    ? links.filter(link => link.href === "/teacher")
+    : links.filter(link => link.href !== "/teacher");
+  const mobileLinks = visibleLinks;
 
   useEffect(() => {
     localStorage.removeItem("sc_ui_mode");
@@ -94,8 +100,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
               Student's Companion
             </Link>
             <nav className="desktop-nav hidden items-center gap-1 rounded-full border border-slate-200 bg-white p-1 sm:flex">
-              {links.map(link => {
-                if (link.href === "/teacher" && !isTeacher) return null;
+              {visibleLinks.map(link => {
                 const isActive = isActivePath(link.href);
                 return (
                   <Link
