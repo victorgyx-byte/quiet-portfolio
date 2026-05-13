@@ -141,7 +141,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
         {showQuickAdd ? (
           <Link
-            href="/dashboard#compose"
+            href={mode === "studio" ? "/dashboard" : "/dashboard#compose"}
             className="quick-add fixed bottom-24 right-4 z-30 grid h-12 w-12 place-items-center rounded-full bg-blue-600 text-2xl font-bold text-white shadow-[0_12px_30px_rgba(37,99,235,0.35)] sm:hidden"
           >
             +
