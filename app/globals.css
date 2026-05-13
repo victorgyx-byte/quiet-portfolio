@@ -326,41 +326,57 @@ html[data-ui-mode="studio"] .quick-add {
   box-shadow: 0 18px 38px rgba(170, 72, 44, 0.3);
 }
 
-html[data-ui-mode="studio"] .rounded-3xl.bg-sage,
-html[data-ui-mode="studio"] .rounded-3xl.bg-moss {
-  overflow: hidden;
-  border: 1px solid rgba(115, 86, 64, 0.12);
-  background:
-    linear-gradient(135deg, rgba(57, 92, 199, 0.92), rgba(36, 123, 112, 0.86)),
-    #395cc7;
-  box-shadow: 0 20px 60px rgba(45, 76, 84, 0.14);
-}
-
-html[data-ui-mode="studio"] .rounded-3xl.bg-moss {
-  background:
-    linear-gradient(135deg, rgba(215, 96, 54, 0.94), rgba(84, 63, 171, 0.86)),
-    #d86036;
-}
-
 html[data-ui-mode="studio"] .glass-card,
 .studio-board {
-  border: 1px solid rgba(135, 105, 82, 0.16);
-  border-radius: 30px;
-  background:
-    linear-gradient(180deg, rgba(255, 252, 247, 0.86), rgba(255, 246, 236, 0.76));
-  box-shadow:
-    0 24px 70px rgba(105, 70, 42, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.64);
-  backdrop-filter: blur(18px);
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+
+html[data-ui-mode="studio"] .page-hero,
+html[data-ui-mode="studio"] .student-hero {
+  border: 0;
+  border-radius: 0;
+  background: transparent !important;
+  box-shadow: none;
+  padding: 0.35rem 0.15rem 0.15rem;
+  color: #35271f;
+}
+
+html[data-ui-mode="studio"] .page-hero p,
+html[data-ui-mode="studio"] .student-hero p {
+  color: rgba(53, 39, 31, 0.64);
+}
+
+html[data-ui-mode="studio"] .page-hero p:first-child,
+html[data-ui-mode="studio"] .student-hero p:first-child {
+  color: rgba(53, 39, 31, 0.48);
+  letter-spacing: 0.08em;
+}
+
+html[data-ui-mode="studio"] .page-hero h1,
+html[data-ui-mode="studio"] .student-hero h1 {
+  max-width: 42rem;
+  color: #35271f;
+  font-size: clamp(2rem, 8vw, 4.1rem);
+  line-height: 0.96;
+}
+
+html[data-ui-mode="studio"] .student-hero .rounded-full {
+  border: 1px solid rgba(103, 78, 59, 0.13);
+  background: rgba(255, 252, 248, 0.64);
+  color: rgba(53, 39, 31, 0.66);
 }
 
 .studio-board {
-  padding: 1rem;
+  padding: 0;
 }
 
 @media (min-width: 640px) {
   .studio-board {
-    padding: 1.25rem;
+    padding: 0;
   }
 }
 
@@ -390,17 +406,19 @@ html[data-ui-mode="studio"] .btn-secondary {
 .studio-capture-card {
   position: relative;
   overflow: hidden;
-  border: 1px solid rgba(123, 91, 68, 0.14);
-  border-radius: 34px;
-  padding: 1.05rem;
-  box-shadow: 0 26px 70px rgba(113, 73, 43, 0.14);
+  border: 0;
+  border-radius: 0;
+  padding: 0.25rem 0.1rem 0;
+  box-shadow: none;
 }
 
 .studio-capture-card::before {
   content: "";
   position: absolute;
-  inset: 0;
-  opacity: 0.9;
+  inset: -0.75rem -0.5rem auto -0.5rem;
+  height: 11rem;
+  border-radius: 32px;
+  opacity: 0.52;
   pointer-events: none;
 }
 
@@ -410,25 +428,25 @@ html[data-ui-mode="studio"] .btn-secondary {
 
 .studio-step-capture::before {
   background:
-    linear-gradient(140deg, rgba(255, 216, 178, 0.9), rgba(255, 248, 239, 0.7)),
+    linear-gradient(140deg, rgba(255, 216, 178, 0.72), rgba(255, 248, 239, 0.16)),
     radial-gradient(circle at 100% 0%, rgba(216, 96, 54, 0.16), transparent 42%);
 }
 
 .studio-step-meaning::before {
   background:
-    linear-gradient(140deg, rgba(255, 236, 183, 0.9), rgba(255, 250, 241, 0.76)),
+    linear-gradient(140deg, rgba(255, 236, 183, 0.72), rgba(255, 250, 241, 0.16)),
     radial-gradient(circle at 100% 10%, rgba(50, 118, 105, 0.14), transparent 42%);
 }
 
 .studio-step-growth::before {
   background:
-    linear-gradient(140deg, rgba(220, 240, 255, 0.88), rgba(255, 250, 244, 0.8)),
+    linear-gradient(140deg, rgba(220, 240, 255, 0.72), rgba(255, 250, 244, 0.16)),
     radial-gradient(circle at 100% 10%, rgba(57, 92, 199, 0.16), transparent 42%);
 }
 
 .studio-step-visibility::before {
   background:
-    linear-gradient(140deg, rgba(235, 225, 255, 0.9), rgba(255, 250, 244, 0.8)),
+    linear-gradient(140deg, rgba(235, 225, 255, 0.72), rgba(255, 250, 244, 0.16)),
     radial-gradient(circle at 100% 10%, rgba(126, 91, 196, 0.16), transparent 42%);
 }
 
@@ -531,10 +549,10 @@ html[data-ui-mode="studio"] .btn-secondary {
 }
 
 .studio-filter-strip {
-  border: 1px solid rgba(103, 78, 59, 0.12);
-  border-radius: 22px;
-  background: rgba(255, 251, 246, 0.72);
-  padding: 0.8rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0;
 }
 
 .studio-select {
@@ -601,12 +619,18 @@ html[data-ui-mode="studio"] .btn-secondary {
 .studio-full-image,
 .studio-follow-up-panel,
 .studio-danger-panel,
-.studio-create-flow,
 .studio-portfolio-card {
   border: 1px solid rgba(103, 78, 59, 0.14);
   border-radius: 24px;
   background: rgba(255, 252, 248, 0.7);
   padding: 0.85rem;
+}
+
+.studio-create-flow {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  padding: 0.25rem 0 0;
 }
 
 .studio-full-image img {
@@ -631,9 +655,7 @@ html[data-ui-mode="studio"] .btn-secondary {
 }
 
 .studio-create-flow {
-  background:
-    linear-gradient(145deg, rgba(255, 237, 217, 0.92), rgba(248, 246, 255, 0.72)),
-    rgba(255, 252, 248, 0.82);
+  background: transparent;
 }
 
 .studio-portfolio-card {
