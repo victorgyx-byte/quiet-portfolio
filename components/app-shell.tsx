@@ -60,14 +60,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
   const { user, signOut, isTeacher } = useAuth();
-  const [mode, setMode] = useState<UiMode>("classic");
+  const [mode, setMode] = useState<UiMode>("studio");
   const showQuickAdd =
     pathname !== "/dashboard" && pathname !== "/teacher" && pathname !== "/portfolio";
   const mobileLinks = links.filter(link => (link.href === "/teacher" ? isTeacher : true));
 
   useEffect(() => {
     const stored = localStorage.getItem("sc_ui_mode");
-    const nextMode = stored === "studio" ? "studio" : "classic";
+    const nextMode = stored === "classic" ? "classic" : "studio";
     setMode(nextMode);
     localStorage.removeItem("sc_theme");
     document.documentElement.removeAttribute("data-theme");
