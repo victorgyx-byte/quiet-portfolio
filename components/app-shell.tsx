@@ -13,6 +13,12 @@ const links = [
   { href: "/teacher", label: "Teacher" }
 ];
 
+const teacherLinks = [
+  { href: "/teacher/reflections", label: "Reflections" },
+  { href: "/teacher/trends", label: "Trends" },
+  { href: "/teacher/notifications", label: "Notifications" }
+];
+
 function NavIcon({ href, active }: { href: string; active: boolean }) {
   const stroke = active ? "#ffffff" : "#4d5f65";
   const common = {
@@ -47,6 +53,23 @@ function NavIcon({ href, active }: { href: string; active: boolean }) {
       </svg>
     );
   }
+  if (href === "/teacher/trends") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+        <path {...common} d="M4 19V5" />
+        <path {...common} d="M4 19h16" />
+        <path {...common} d="M7 16l3-4 3 2 5-7" />
+      </svg>
+    );
+  }
+  if (href === "/teacher/notifications") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+        <path {...common} d="M6 9a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6" />
+        <path {...common} d="M10 19a2 2 0 0 0 4 0" />
+      </svg>
+    );
+  }
 
   return (
     <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
@@ -66,9 +89,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     pathname !== "/dashboard" &&
     pathname !== "/teacher" &&
     pathname !== "/portfolio";
-  const visibleLinks = isTeacher
-    ? links.filter(link => link.href === "/teacher")
-    : links.filter(link => link.href !== "/teacher");
+  const visibleLinks = isTeacher ? teacherLinks : links.filter(link => link.href !== "/teacher");
   const mobileLinks = visibleLinks;
 
   useEffect(() => {

@@ -22,7 +22,7 @@ function getStudentKey(reflection: Reflection) {
   return reflection.studentEmail || reflection.userId;
 }
 
-export function TeacherDashboard() {
+export function TeacherDashboard({ activeTab = "shared" }: { activeTab?: TeacherTab }) {
   const { user } = useAuth();
   const [reflections, setReflections] = useState<Reflection[]>([]);
   const [error, setError] = useState("");
@@ -31,7 +31,6 @@ export function TeacherDashboard() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "saving" | "error">("idle");
-  const [activeTab, setActiveTab] = useState<TeacherTab>("shared");
   const [notificationTitle, setNotificationTitle] = useState("A gentle reflection reminder");
   const [notificationMessage, setNotificationMessage] = useState(
     "Take two minutes today to capture one moment that stayed with you."
@@ -165,25 +164,6 @@ export function TeacherDashboard() {
           appears in their timeline.
         </p>
       </section>
-
-      <div className="grid gap-2 rounded-3xl border border-slate-200 bg-white/80 p-2 shadow-soft sm:grid-cols-3">
-        {[
-          ["shared", "Student reflections"],
-          ["trends", "Overall trend"],
-          ["notifications", "Notification centre"]
-        ].map(([id, label]) => (
-          <button
-            key={id}
-            type="button"
-            onClick={() => setActiveTab(id as TeacherTab)}
-            className={`min-h-11 rounded-2xl px-3 py-2 text-sm font-bold ${
-              activeTab === id ? "bg-slate-900 text-white" : "bg-slate-50 text-slate-600"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
 
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
