@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { useUiMode } from "@/components/ui-mode";
 import {
   addReflectionFollowUp,
   deleteReflection,
@@ -24,6 +25,8 @@ function formatDate(reflection: Reflection) {
 
 export function ReflectionTimeline() {
   const { user } = useAuth();
+  const { mode } = useUiMode();
+  const isStudio = mode === "studio";
   const [reflections, setReflections] = useState<Reflection[]>([]);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
@@ -157,7 +160,7 @@ export function ReflectionTimeline() {
       : monthlyGroups.filter(group => group.key === selectedMonthKey);
 
   return (
-    <section className="glass-card rounded-3xl p-4 shadow-soft sm:p-5">
+    <section className={isStudio ? "studio-board studio-timeline" : "glass-card rounded-3xl p-4 shadow-soft sm:p-5"}>
       <div className="flex items-end justify-between gap-3">
         <div>
           <h2 className="display-title">Timeline</h2>
@@ -180,13 +183,13 @@ export function ReflectionTimeline() {
       ) : null}
 
       <div className="mt-4 space-y-4">
-        <div className="rounded-xl border border-slate-200 bg-white p-3">
+        <div className={isStudio ? "studio-filter-strip" : "rounded-xl border border-slate-200 bg-white p-3"}>
           <label className="block text-sm font-semibold text-slate-700">
             Month
             <select
               value={selectedMonthKey}
               onChange={event => setSelectedMonthKey(event.target.value)}
-              className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-500"
+              className={isStudio ? "studio-select mt-2 min-h-11 w-full text-sm outline-none" : "mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-500"}
             >
               {monthOptions.map(option => (
                 <option key={option.key} value={option.key}>
@@ -214,7 +217,7 @@ export function ReflectionTimeline() {
               <details
                 key={group.key}
                 open={groupIndex < 2}
-                className="rounded-2xl border border-slate-200 bg-white p-3"
+                className={isStudio ? "studio-month-group" : "rounded-2xl border border-slate-200 bg-white p-3"}
               >
                 <summary className="cursor-pointer list-none text-sm font-semibold text-slate-700">
                   <div className="flex items-center justify-between gap-3">
@@ -251,23 +254,23 @@ export function ReflectionTimeline() {
                             setNoteError("");
                           }
                         }}
-                        className="w-full cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-[0_10px_26px_rgba(15,23,42,0.07)]"
+                        className={isStudio ? `studio-moment-card ${isExpanded ? "expanded" : ""}` : "w-full cursor-pointer overflow-hidden rounded-2xl border border-slate-200 bg-white text-left shadow-[0_10px_26px_rgba(15,23,42,0.07)]"}
                       >
                         {reflection.images?.length ? (
-                          <div className="grid grid-cols-2 gap-[1px] bg-slate-200 sm:grid-cols-3">
+                          <div className={isStudio ? "studio-moment-media" : "grid grid-cols-2 gap-[1px] bg-slate-200 sm:grid-cols-3"}>
                             {reflection.images.map(image => (
                               <div key={image.path} className="bg-white">
                                 <img
                                   src={image.url}
                                   alt="Reflection upload"
-                                  className="h-28 w-full object-cover"
+                                  className={isStudio ? "h-36 w-full object-cover" : "h-28 w-full object-cover"}
                                   loading="lazy"
                                 />
                               </div>
                             ))}
                           </div>
                         ) : null}
-                        <div className="p-4">
+                        <div className={isStudio ? "p-4 sm:p-5" : "p-4"}>
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
                               {reflection.competency}
@@ -289,7 +292,7 @@ export function ReflectionTimeline() {
 
                           {isExpanded ? (
                             <div
-                              className="mt-4 space-y-4 border-t border-slate-200 pt-4"
+                              className={isStudio ? "studio-moment-detail" : "mt-4 space-y-4 border-t border-slate-200 pt-4"}
                               onClick={event => event.stopPropagation()}
                             >
                               {reflection.images?.length ? (
@@ -301,7 +304,7 @@ export function ReflectionTimeline() {
                                       href={image.url}
                                       target="_blank"
                                       rel="noreferrer"
-                                      className="block rounded-2xl border border-slate-200 bg-slate-50 p-2"
+                                      className={isStudio ? "studio-full-image" : "block rounded-2xl border border-slate-200 bg-slate-50 p-2"}
                                     >
                                       <img
                                         src={image.url}
@@ -314,7 +317,7 @@ export function ReflectionTimeline() {
                                 </div>
                               ) : null}
 
-                              <div className="space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-3">
+                              <div className={isStudio ? "studio-follow-up-panel" : "space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-3"}>
                                 <p className="text-sm font-semibold text-slate-800">
                                   Additional reflections
                                 </p>
@@ -355,7 +358,7 @@ export function ReflectionTimeline() {
                                     onChange={event => setNoteText(event.target.value)}
                                     rows={3}
                                     placeholder="Add an additional reflection..."
-                                    className="mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-blue-500"
+                                    className={isStudio ? "studio-open-input mt-2 w-full resize-none text-sm leading-6 outline-none" : "mt-2 w-full resize-none rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm leading-6 outline-none focus:border-blue-500"}
                                   />
                                 </label>
 
@@ -377,7 +380,7 @@ export function ReflectionTimeline() {
                                 ) : null}
                               </div>
 
-                              <div className="rounded-2xl border border-rose-200 bg-rose-50/70 p-3">
+                              <div className={isStudio ? "studio-danger-panel" : "rounded-2xl border border-rose-200 bg-rose-50/70 p-3"}>
                                 {confirmDeleteId === reflection.id ? (
                                   <div className="space-y-3">
                                     <p className="text-sm font-semibold text-rose-700">

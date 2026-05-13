@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { useUiMode } from "@/components/ui-mode";
 import { createReflection } from "@/lib/reflections";
 import { uploadReflectionImages } from "@/lib/storage";
 import type { ReflectionVisibility } from "@/types/reflection";
@@ -49,6 +50,8 @@ function buildReflectionBody(momentText: string, elaborationText: string) {
 
 export function ReflectionForm() {
   const { user } = useAuth();
+  const { mode } = useUiMode();
+  const isStudio = mode === "studio";
 
   const [step, setStep] = useState(1);
   const [momentText, setMomentText] = useState("");
@@ -158,19 +161,39 @@ export function ReflectionForm() {
 
   const stepLabel = useMemo(() => `Step ${step} of 4`, [step]);
   const stepCardClass = useMemo(() => {
+    if (isStudio) {
+      if (step === 1) return "studio-step-capture";
+      if (step === 2) return "studio-step-meaning";
+      if (step === 3) return "studio-step-growth";
+      return "studio-step-visibility";
+    }
     if (step === 1) return "border-orange-200/80 bg-orange-50/85";
     if (step === 2) return "border-amber-200/80 bg-amber-50/85";
     if (step === 3) return "border-sky-200/80 bg-sky-50/85";
     return "border-violet-200/80 bg-violet-50/85";
-  }, [step]);
+  }, [isStudio, step]);
+
+  const textAreaClass = isStudio
+    ? "studio-open-input w-full resize-none text-base leading-8 outline-none"
+    : "w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base leading-7 outline-none transition focus:border-blue-500 focus:bg-white";
+  const chipClass = (selected: boolean, tone: "blue" | "teal" = "blue") =>
+    isStudio
+      ? `studio-chip ${selected ? "selected" : ""}`
+      : `min-h-11 rounded-2xl border px-3 py-2 text-left text-sm font-semibold ${
+          selected
+            ? tone === "teal"
+              ? "border-teal-400 bg-teal-50 text-teal-700"
+              : "border-blue-400 bg-blue-50 text-blue-700"
+            : "border-slate-200 bg-white text-slate-600"
+        }`;
 
   return (
     <form
       onSubmit={handleSave}
-      className={`rounded-3xl border p-4 shadow-soft backdrop-blur sm:p-5 ${stepCardClass}`}
+      className={`${isStudio ? "studio-capture-card" : "rounded-3xl border p-4 shadow-soft backdrop-blur sm:p-5"} ${stepCardClass}`}
     >
       <div className="mb-4 flex items-center justify-between">
-        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+        <p className={isStudio ? "studio-kicker" : "text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"}>
           {stepLabel}
         </p>
         <div className="flex gap-1.5">
@@ -211,7 +234,7 @@ export function ReflectionForm() {
         <>
           {step === 1 ? (
             <div className="space-y-4">
-              <div>
+              <div className={isStudio ? "studio-prompt-block" : ""}>
                 <h2 className="display-title">
                   What stayed with you today?
                 </h2>
@@ -229,7 +252,7 @@ export function ReflectionForm() {
                   onChange={event => setMomentText(event.target.value)}
                   placeholder="I noticed..."
                   rows={4}
-                  className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base leading-7 outline-none transition focus:border-blue-500 focus:bg-white"
+                  className={textAreaClass}
                 />
               </label>
 
@@ -237,7 +260,7 @@ export function ReflectionForm() {
                 <span className="text-sm font-semibold text-slate-800">
                   Add photo if it helps you remember.
                 </span>
-                <div className="mt-2 grid gap-2 sm:grid-cols-2">
+                <div className={isStudio ? "mt-3 grid grid-cols-2 gap-2" : "mt-2 grid gap-2 sm:grid-cols-2"}>
                   <button
                     type="button"
                     onClick={() => cameraInputRef.current?.click()}
@@ -272,13 +295,13 @@ export function ReflectionForm() {
               </label>
 
               {files.length ? (
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                <div className={isStudio ? "studio-photo-strip" : "grid grid-cols-2 gap-2 sm:grid-cols-3"}>
                   {files.map((image, index) => (
-                    <div key={`${image.file.name}-${image.file.size}-${index}`} className="rounded-xl border border-slate-200 bg-white p-2">
+                    <div key={`${image.file.name}-${image.file.size}-${index}`} className={isStudio ? "studio-photo-tile" : "rounded-xl border border-slate-200 bg-white p-2"}>
                       <img
                         src={image.previewUrl}
                         alt={image.file.name}
-                        className="h-24 w-full rounded-lg object-cover"
+                        className={isStudio ? "h-32 w-full object-cover" : "h-24 w-full rounded-lg object-cover"}
                       />
                       <button
                         type="button"
@@ -305,7 +328,7 @@ export function ReflectionForm() {
 
           {step === 2 ? (
             <div className="space-y-4">
-              <div>
+              <div className={isStudio ? "studio-prompt-block" : ""}>
                 <h2 className="display-title">
                   What made this important?
                 </h2>
@@ -321,7 +344,7 @@ export function ReflectionForm() {
                 onChange={event => setElaborationText(event.target.value)}
                 placeholder="This mattered because..."
                 rows={5}
-                className="w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-4 py-3 text-base leading-7 outline-none transition focus:border-blue-500 focus:bg-white"
+                className={textAreaClass}
               />
               <div className="grid gap-2 sm:grid-cols-3">
                 <button
@@ -351,7 +374,7 @@ export function ReflectionForm() {
 
           {step === 3 ? (
             <div className="space-y-4">
-              <div>
+              <div className={isStudio ? "studio-prompt-block" : ""}>
                 <h2 className="display-title">
                   What kind of growth does this show?
                 </h2>
@@ -362,17 +385,13 @@ export function ReflectionForm() {
 
               <div>
                 <p className="mb-2 text-sm font-semibold text-slate-800">21CC growth tag</p>
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className={isStudio ? "studio-chip-cloud" : "grid gap-2 sm:grid-cols-2"}>
                   {competencies.map(item => (
                     <button
                       key={item}
                       type="button"
                       onClick={() => setCompetency(item)}
-                      className={`min-h-11 rounded-2xl border px-3 py-2 text-left text-sm font-semibold ${
-                        competency === item
-                          ? "border-blue-400 bg-blue-50 text-blue-700"
-                          : "border-slate-200 bg-white text-slate-600"
-                      }`}
+                      className={chipClass(competency === item)}
                     >
                       {item}
                     </button>
@@ -382,17 +401,13 @@ export function ReflectionForm() {
 
               <div>
                 <p className="mb-2 text-sm font-semibold text-slate-800">Context</p>
-                <div className="grid gap-2 sm:grid-cols-2">
+                <div className={isStudio ? "studio-chip-cloud compact" : "grid gap-2 sm:grid-cols-2"}>
                   {categories.map(item => (
                     <button
                       key={item}
                       type="button"
                       onClick={() => setCategory(item)}
-                      className={`min-h-11 rounded-2xl border px-3 py-2 text-left text-sm font-semibold ${
-                        category === item
-                          ? "border-teal-400 bg-teal-50 text-teal-700"
-                          : "border-slate-200 bg-white text-slate-600"
-                      }`}
+                      className={chipClass(category === item, "teal")}
                     >
                       {item}
                     </button>
@@ -421,7 +436,7 @@ export function ReflectionForm() {
 
           {step === 4 ? (
             <div className="space-y-4">
-              <div>
+              <div className={isStudio ? "studio-prompt-block" : ""}>
                 <h2 className="display-title">Who should see this?</h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
                   Sharing with teachers can help you get ideas and guidance. You can
@@ -444,11 +459,15 @@ export function ReflectionForm() {
                 ].map(([value, label, help]) => (
                   <label
                     key={value}
-                    className={`flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 ${
-                      visibility === value
-                        ? "border-blue-400 bg-blue-50"
-                        : "border-slate-200 bg-white"
-                    }`}
+                    className={
+                      isStudio
+                        ? `studio-choice-row ${visibility === value ? "selected" : ""}`
+                        : `flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 ${
+                            visibility === value
+                              ? "border-blue-400 bg-blue-50"
+                              : "border-slate-200 bg-white"
+                          }`
+                    }
                   >
                     <input
                       type="radio"

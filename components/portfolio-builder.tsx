@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
+import { useUiMode } from "@/components/ui-mode";
 import {
   addPortfolioUpdate,
   createPortfolio,
@@ -85,6 +86,8 @@ function getImageSize(dataUrl: string) {
 
 export function PortfolioBuilder() {
   const { user } = useAuth();
+  const { mode } = useUiMode();
+  const isStudio = mode === "studio";
   const searchParams = useSearchParams();
 
   const [reflections, setReflections] = useState<Reflection[]>([]);
@@ -400,7 +403,7 @@ export function PortfolioBuilder() {
   }
 
   return (
-    <section className="glass-card rounded-3xl p-5 shadow-soft">
+    <section className={isStudio ? "studio-board studio-portfolio" : "glass-card rounded-3xl p-5 shadow-soft"}>
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="display-title">Portfolio Workspace</h2>
@@ -415,14 +418,14 @@ export function PortfolioBuilder() {
             resetCreateFlow();
             setStatusMessage("");
           }}
-          className="btn-primary w-auto rounded-full px-4"
+          className={isStudio ? "studio-create-button" : "btn-primary w-auto rounded-full px-4"}
         >
           Create New Portfolio
         </button>
       </div>
 
       {isCreating ? (
-        <div className="mt-4 space-y-4 rounded-2xl border border-slate-200 bg-white p-4">
+        <div className={isStudio ? "studio-create-flow mt-4 space-y-4" : "mt-4 space-y-4 rounded-2xl border border-slate-200 bg-white p-4"}>
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
             Step {createStep} of 6
           </p>
@@ -431,13 +434,13 @@ export function PortfolioBuilder() {
             <div className="space-y-3">
               <h3 className="text-xl font-bold text-slate-900">What is this portfolio for?</h3>
               <p className="text-sm text-slate-500">Choose the story you want this portfolio to tell.</p>
-              <div className="grid gap-2">
+              <div className={isStudio ? "studio-chip-cloud" : "grid gap-2"}>
                 {PURPOSE_OPTIONS.map(option => (
                   <button
                     key={option.id}
                     type="button"
                     onClick={() => setPurpose(option.id)}
-                    className={`rounded-xl border px-3 py-2 text-left text-sm ${
+                    className={isStudio ? `studio-chip ${purpose === option.id ? "selected" : ""}` : `rounded-xl border px-3 py-2 text-left text-sm ${
                       purpose === option.id ? "border-blue-300 bg-blue-50" : "border-slate-200 bg-white"
                     }`}
                   >
@@ -450,7 +453,7 @@ export function PortfolioBuilder() {
                   value={purposeOther}
                   onChange={event => setPurposeOther(event.target.value)}
                   placeholder="This portfolio is for..."
-                  className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-500"
+                  className={isStudio ? "studio-open-input min-h-11 w-full text-sm outline-none" : "min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-500"}
                 />
               ) : null}
             </div>
@@ -460,13 +463,13 @@ export function PortfolioBuilder() {
             <div className="space-y-3">
               <h3 className="text-xl font-bold text-slate-900">What do you want to focus on?</h3>
               <p className="text-sm text-slate-500">Choose 1-2 priorities (you can select more).</p>
-              <div className="grid gap-2 sm:grid-cols-2">
+              <div className={isStudio ? "studio-chip-cloud" : "grid gap-2 sm:grid-cols-2"}>
                 {FOCUS_TAGS.map(tag => (
                   <button
                     key={tag}
                     type="button"
                     onClick={() => toggleFocus(tag)}
-                    className={`rounded-xl border px-3 py-2 text-left text-sm ${
+                    className={isStudio ? `studio-chip ${focusTags.includes(tag) ? "selected" : ""}` : `rounded-xl border px-3 py-2 text-left text-sm ${
                       focusTags.includes(tag) ? "border-blue-300 bg-blue-50" : "border-slate-200 bg-white"
                     }`}
                   >
@@ -480,9 +483,9 @@ export function PortfolioBuilder() {
           {createStep === 3 ? (
             <div className="space-y-3">
               <h3 className="text-xl font-bold text-slate-900">Which moments help tell this story?</h3>
-              <div className="max-h-72 space-y-2 overflow-auto pr-1">
+              <div className={isStudio ? "studio-select-moments max-h-72 space-y-2 overflow-auto pr-1" : "max-h-72 space-y-2 overflow-auto pr-1"}>
                 {reflections.map(reflection => (
-                  <label key={reflection.id} className="flex gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                  <label key={reflection.id} className={isStudio ? "studio-choice-row" : "flex gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"}>
                     <input
                       type="checkbox"
                       checked={selectedReflectionIds.includes(reflection.id)}
@@ -507,7 +510,7 @@ export function PortfolioBuilder() {
                 onChange={event => setConnectionText(event.target.value)}
                 placeholder="These moments show..."
                 rows={5}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                className={isStudio ? "studio-open-input w-full text-sm outline-none" : "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-500"}
               />
             </div>
           ) : null}
@@ -520,7 +523,7 @@ export function PortfolioBuilder() {
                 onChange={event => setIpsativeText(event.target.value)}
                 placeholder="What changed from then to now?"
                 rows={5}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                className={isStudio ? "studio-open-input w-full text-sm outline-none" : "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-500"}
               />
             </div>
           ) : null}
@@ -532,14 +535,14 @@ export function PortfolioBuilder() {
                 value={title}
                 onChange={event => setTitle(event.target.value)}
                 placeholder="Portfolio title"
-                className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-500"
+                className={isStudio ? "studio-open-input min-h-11 w-full text-sm outline-none" : "min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-500"}
               />
               <textarea
                 value={growthStatement}
                 onChange={event => setGrowthStatement(event.target.value)}
                 placeholder="Growth statement..."
                 rows={5}
-                className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                className={isStudio ? "studio-open-input w-full text-sm outline-none" : "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-500"}
               />
             </div>
           ) : null}
@@ -582,7 +585,7 @@ export function PortfolioBuilder() {
               <details
                 key={item.id}
                 open={isExpanded}
-                className="rounded-2xl border border-slate-200 bg-white p-3"
+                className={isStudio ? "studio-portfolio-card" : "rounded-2xl border border-slate-200 bg-white p-3"}
               >
                 <summary
                   className="cursor-pointer list-none"
@@ -600,14 +603,14 @@ export function PortfolioBuilder() {
                         {item.focusTags?.slice(0, 2).join(", ") || "No focus yet"}
                       </p>
                     </div>
-                    <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
+                    <span className={isStudio ? "studio-small-pill" : "rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500"}>
                       {isExpanded ? "Hide" : "Edit"}
                     </span>
                   </div>
                 </summary>
 
                 {isExpanded && selectedPortfolioId === item.id ? (
-                  <div className="mt-3 space-y-4 border-t border-slate-200 pt-3">
+                  <div className={isStudio ? "studio-portfolio-detail" : "mt-3 space-y-4 border-t border-slate-200 pt-3"}>
                     <p className="text-sm text-slate-500">
                       Add more reflections, update your story, then export to Slides or PDF.
                     </p>
@@ -615,18 +618,18 @@ export function PortfolioBuilder() {
                       <input
                         value={title}
                         onChange={event => setTitle(event.target.value)}
-                        className="min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-500"
+                        className={isStudio ? "studio-open-input min-h-11 w-full text-sm outline-none" : "min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-500"}
                       />
                       <textarea
                         value={growthStatement}
                         onChange={event => setGrowthStatement(event.target.value)}
                         placeholder="Growth statement..."
                         rows={4}
-                        className="w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-500"
+                        className={isStudio ? "studio-open-input w-full text-sm outline-none" : "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-500"}
                       />
                       <div className="max-h-60 space-y-2 overflow-auto pr-1">
                         {reflections.map(reflection => (
-                          <label key={reflection.id} className="flex gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
+                          <label key={reflection.id} className={isStudio ? "studio-choice-row" : "flex gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"}>
                             <input
                               type="checkbox"
                               checked={selectedReflectionIds.includes(reflection.id)}
@@ -650,14 +653,14 @@ export function PortfolioBuilder() {
                       </button>
                     </div>
 
-                    <div className="space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3">
+                    <div className={isStudio ? "studio-follow-up-panel" : "space-y-2 rounded-xl border border-slate-200 bg-slate-50 p-3"}>
                       <p className="text-sm font-semibold text-slate-800">Additional reflection update</p>
                       <textarea
                         value={quickUpdateText}
                         onChange={event => setQuickUpdateText(event.target.value)}
                         placeholder="What changed since your last update?"
                         rows={3}
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"
+                        className={isStudio ? "studio-open-input w-full text-sm outline-none" : "w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-blue-500"}
                       />
                       <button type="button" onClick={handleAddQuickUpdate} className="btn-secondary">
                         Add update note
