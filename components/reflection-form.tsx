@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
+import { PromptChips } from "@/components/prompt-chips";
 import { useUiMode } from "@/components/ui-mode";
 import { createReflectionStat } from "@/lib/reflection-stats";
 import { createReflection } from "@/lib/reflections";
@@ -23,6 +24,26 @@ const competencies = [
 ];
 
 const MAX_IMAGES = 5;
+const ATTENDING_CHIPS = [
+  "I noticed...",
+  "I felt...",
+  "I tried...",
+  "I struggled with...",
+  "I was surprised by...",
+  "I helped...",
+  "I chose...",
+  "I want to remember..."
+];
+const INTERPRETING_CHIPS = [
+  "This stayed with me because...",
+  "I realised...",
+  "It showed me...",
+  "Compared to before...",
+  "I wonder if...",
+  "Next time...",
+  "I want to understand...",
+  "This mattered because..."
+];
 
 type SelectedImage = {
   file: File;
@@ -65,6 +86,8 @@ export function ReflectionForm() {
   const [error, setError] = useState("");
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const libraryInputRef = useRef<HTMLInputElement | null>(null);
+  const momentTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const elaborationTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   const canContinueStep1 = momentText.trim().length > 0 || files.length > 0;
   const canSave = canContinueStep1 && Boolean(competency) && Boolean(category);
@@ -123,6 +146,34 @@ export function ReflectionForm() {
       const removed = copy.splice(index, 1)[0];
       if (removed) URL.revokeObjectURL(removed.previewUrl);
       return copy;
+    });
+  }
+
+  function insertChipText(
+    chip: string,
+    value: string,
+    setValue: (next: string) => void,
+    textarea: HTMLTextAreaElement | null
+  ) {
+    const start = textarea?.selectionStart;
+    const end = textarea?.selectionEnd;
+    const hasCursor = typeof start === "number" && typeof end === "number";
+    const prefix = value.trim().length > 0 ? "\n" : "";
+
+    if (!hasCursor || !textarea) {
+      setValue(value ? `${value}${prefix}${chip}` : chip);
+      return;
+    }
+
+    const before = value.slice(0, start);
+    const after = value.slice(end);
+    const separator = before.length > 0 && !before.endsWith("\n") ? "\n" : "";
+    const next = `${before}${separator}${chip}${after}`;
+    setValue(next);
+    window.requestAnimationFrame(() => {
+      const nextCursor = before.length + separator.length + chip.length;
+      textarea.focus();
+      textarea.setSelectionRange(nextCursor, nextCursor);
     });
   }
 
@@ -243,18 +294,16 @@ export function ReflectionForm() {
             <div className="space-y-4">
               <div className={isStudio ? "studio-prompt-block" : ""}>
                 <h2 className="display-title">
-                  What stayed with you today?
+                  What is one moment that stayed with you today?
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  What's one moment you keep thinking about?
-                </p>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-                  What happened? What did you notice, feel, try, or struggle with?
+                  Choose something you noticed, felt, tried, struggled with, or want to remember.
                 </p>
               </div>
 
               <label className="block">
                 <textarea
+                  ref={momentTextareaRef}
                   value={momentText}
                   onChange={event => setMomentText(event.target.value)}
                   placeholder="I noticed..."
@@ -262,6 +311,17 @@ export function ReflectionForm() {
                   className={textAreaClass}
                 />
               </label>
+              <PromptChips
+                chips={ATTENDING_CHIPS}
+                onSelect={chip =>
+                  insertChipText(
+                    chip,
+                    momentText,
+                    setMomentText,
+                    momentTextareaRef.current
+                  )
+                }
+              />
 
               <label className="block">
                 <span className="text-sm font-semibold text-slate-800">
@@ -337,21 +397,30 @@ export function ReflectionForm() {
             <div className="space-y-4">
               <div className={isStudio ? "studio-prompt-block" : ""}>
                 <h2 className="display-title">
-                  What made this important?
+                  Why do you think this stayed with you?
                 </h2>
                 <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Add why this moment matters to your growth.
-                </p>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-                  You can write about what changed, what you learned about yourself, what you might try next.
+                  What might it show about you, others, or the situation?
                 </p>
               </div>
               <textarea
+                ref={elaborationTextareaRef}
                 value={elaborationText}
                 onChange={event => setElaborationText(event.target.value)}
-                placeholder="This mattered because..."
+                placeholder="This stayed with me because..."
                 rows={5}
                 className={textAreaClass}
+              />
+              <PromptChips
+                chips={INTERPRETING_CHIPS}
+                onSelect={chip =>
+                  insertChipText(
+                    chip,
+                    elaborationText,
+                    setElaborationText,
+                    elaborationTextareaRef.current
+                  )
+                }
               />
               <div className="grid gap-2 sm:grid-cols-3">
                 <button
