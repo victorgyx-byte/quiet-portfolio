@@ -4,6 +4,7 @@ import {
   addDoc,
   arrayUnion,
   collection,
+  deleteDoc,
   doc,
   onSnapshot,
   query,
@@ -81,4 +82,9 @@ export async function savePortfolioSlidesIntegration(
     slidesIntegration: integration,
     updatedAt: serverTimestamp()
   });
+}
+
+export async function deletePortfolio(portfolioId: string) {
+  const ref = doc(db, "portfolios", portfolioId);
+  await deleteDoc(ref);
 }

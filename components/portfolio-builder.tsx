@@ -8,6 +8,7 @@ import { useUiMode } from "@/components/ui-mode";
 import {
   addPortfolioUpdate,
   createPortfolio,
+  deletePortfolio,
   savePortfolioSlidesIntegration,
   subscribeToStudentPortfolios,
   updatePortfolio
@@ -160,6 +161,8 @@ export function PortfolioBuilder() {
   const [createStep, setCreateStep] = useState(1);
   const [statusMessage, setStatusMessage] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [deletingPortfolioId, setDeletingPortfolioId] = useState("");
+  const [confirmDeletePortfolioId, setConfirmDeletePortfolioId] = useState("");
   const [isSyncingSlides, setIsSyncingSlides] = useState(false);
   const [startNewDeck, setStartNewDeck] = useState(false);
   const [quickUpdateText, setQuickUpdateText] = useState("");
@@ -211,7 +214,8 @@ export function PortfolioBuilder() {
     () => reflections.filter(item => selectedReflectionIds.includes(item.id)),
     [reflections, selectedReflectionIds]
   );
-  const shouldShowSelectedReferences = isCreating && createStep >= 4 && selectedReflections.length > 0;
+  const shouldShowSelectedReferences =
+    isCreating && createStep >= 4 && createStep <= 5 && selectedReflections.length > 0;
 
   const googleConnectStatus = searchParams.get("google_connect");
 
@@ -310,6 +314,25 @@ export function PortfolioBuilder() {
       setStatusMessage("Could not add update note.");
     } finally {
       setIsSaving(false);
+    }
+  }
+
+  async function handleDeletePortfolio(portfolioId: string) {
+    setDeletingPortfolioId(portfolioId);
+    setStatusMessage("");
+    try {
+      await deletePortfolio(portfolioId);
+      setConfirmDeletePortfolioId("");
+      setExpandedPortfolioId("");
+      if (selectedPortfolioId === portfolioId) {
+        const nextPortfolio = portfolios.find(portfolio => portfolio.id !== portfolioId);
+        setSelectedPortfolioId(nextPortfolio?.id ?? "");
+      }
+      setStatusMessage("Portfolio deleted. Your original reflections are still safe.");
+    } catch {
+      setStatusMessage("Could not delete portfolio. Please try again.");
+    } finally {
+      setDeletingPortfolioId("");
     }
   }
 
@@ -606,7 +629,9 @@ export function PortfolioBuilder() {
 
           {createStep === 6 ? (
             <div className="space-y-3">
-              <h3 className="text-xl font-bold text-slate-900">Who are you becoming as a learner?</h3>
+              <h3 className="text-xl font-bold text-slate-900">
+                Let's give your portfolio a title and a growth statement
+              </h3>
               <input
                 value={title}
                 onChange={event => setTitle(event.target.value)}
@@ -794,6 +819,48 @@ export function PortfolioBuilder() {
                         </a>
                       </p>
                     ) : null}
+
+                    <div className={isStudio ? "studio-danger-panel" : "rounded-2xl border border-rose-200 bg-rose-50/70 p-3"}>
+                      {confirmDeletePortfolioId === item.id ? (
+                        <div className="space-y-3">
+                          <p className="text-sm font-semibold text-rose-700">
+                            Delete this portfolio?
+                          </p>
+                          <p className="text-xs leading-5 text-rose-600">
+                            This removes the portfolio workspace and export link from this app.
+                            Your original reflections will not be deleted.
+                          </p>
+                          <div className="grid gap-2 sm:grid-cols-2">
+                            <button
+                              type="button"
+                              onClick={() => setConfirmDeletePortfolioId("")}
+                              disabled={deletingPortfolioId === item.id}
+                              className="btn-secondary disabled:cursor-not-allowed disabled:opacity-45"
+                            >
+                              Cancel
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => handleDeletePortfolio(item.id)}
+                              disabled={deletingPortfolioId === item.id}
+                              className="btn-tertiary border-rose-300 bg-rose-100 text-rose-700 disabled:cursor-not-allowed disabled:opacity-45"
+                            >
+                              {deletingPortfolioId === item.id
+                                ? "Deleting..."
+                                : "Yes, delete portfolio"}
+                            </button>
+                          </div>
+                        </div>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => setConfirmDeletePortfolioId(item.id)}
+                          className="btn-tertiary border-rose-300 bg-rose-100 text-rose-700"
+                        >
+                          Delete portfolio
+                        </button>
+                      )}
+                    </div>
                   </div>
                 ) : null}
               </details>
