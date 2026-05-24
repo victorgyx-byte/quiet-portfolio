@@ -86,8 +86,26 @@ export function ReflectionTimeline() {
     if (!expandedReflection || !noteText.trim()) return;
     setNoteStatus("saving");
     setNoteError("");
+    const trimmedNote = noteText.trim();
+    const createdAt = new Date().toISOString();
     try {
-      await addReflectionFollowUp(expandedReflection.id, noteText);
+      await addReflectionFollowUp(expandedReflection.id, trimmedNote);
+      setReflections(current =>
+        current.map(reflection =>
+          reflection.id === expandedReflection.id
+            ? {
+                ...reflection,
+                followUpNotes: [
+                  ...(reflection.followUpNotes ?? []),
+                  {
+                    text: trimmedNote,
+                    createdAt
+                  }
+                ]
+              }
+            : reflection
+        )
+      );
       setNoteText("");
       setNoteStatus("idle");
     } catch {
