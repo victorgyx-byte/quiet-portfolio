@@ -14,8 +14,8 @@ const spaceGrotesk = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
-  title: "Student's Companion",
-  description: "A calm student-owned reflection portfolio for secondary school learners.",
+  title: "Checkpoint",
+  description: "A calm student-owned reflection app for logging learning checkpoints over time.",
   manifest: "/manifest.json",
   icons: {
     icon: "/icon.svg",
@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    title: "Student's Companion",
+    title: "Checkpoint",
     statusBarStyle: "default"
   },
   themeColor: "#c95f3d"

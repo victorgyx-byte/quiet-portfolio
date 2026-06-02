@@ -1,0 +1,53 @@
+{
+  "keywords": [
+    "education",
+    "learning",
+    "teaching",
+    "student",
+    "school",
+    "literacy",
+    "numeracy",
+    "curriculum",
+    "assessment",
+    "pedagogy",
+    "higher education",
+    "education policy",
+    "edtech",
+    "AI in education",
+    "learning science"
+  ],
+  "feeds": [
+    {
+      "name": "Google News: Education Research",
+      "url": "https://news.google.com/rss/search?q=%22education%20research%22%20OR%20%22educational%20research%22&hl=en-US&gl=US&ceid=US:en"
+    },
+    {
+      "name": "Google News: Global Education Policy",
+      "url": "https://news.google.com/rss/search?q=%22global%20education%22%20%22research%22%20OR%20%22education%20policy%22%20%22research%22&hl=en-US&gl=US&ceid=US:en"
+    },
+    {
+      "name": "Google News: AI in Education",
+      "url": "https://news.google.com/rss/search?q=%22AI%20in%20education%22%20%22research%22%20OR%20%22artificial%20intelligence%20in%20education%22&hl=en-US&gl=US&ceid=US:en"
+    },
+    {
+      "name": "UNESCO GEM Report Blog",
+      "url": "https://world-education-blog.org/feed/"
+    },
+    {
+      "name": "OECD Education",
+      "url": "https://oecdedutoday.com/feed/"
+    },
+    {
+      "name": "Education Next",
+      "url": "https://www.educationnext.org/feed/"
+    },
+    {
+      "name": "The Conversation Education",
+      "url": "https://theconversation.com/us/education/articles.atom"
+    },
+    {
+      "name": "NPR Education",
+      "url": "https://feeds.npr.org/1013/rss.xml"
+    }
+  ]
+}

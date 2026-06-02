@@ -118,7 +118,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <header className="app-header sticky top-0 z-20 -mx-4 border-b border-slate-200/70 bg-white/80 px-4 py-3 backdrop-blur sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-3">
             <Link href="/" className="app-brand text-sm font-black uppercase tracking-[0.08em] text-slate-800">
-              Student's Companion
+              Checkpoint
             </Link>
             <nav className="desktop-nav hidden items-center gap-1 rounded-full border border-slate-200 bg-white p-1 sm:flex">
               {visibleLinks.map(link => {

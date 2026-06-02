@@ -46,10 +46,10 @@ export function LandingPage() {
       <section className="mx-auto grid min-h-screen w-full max-w-6xl content-center gap-12 px-5 py-8 sm:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-center">
         <div className="max-w-2xl">
           <p className="mb-4 text-sm font-black uppercase tracking-[0.14em] text-[#8a6a57]">
-            Student-owned portfolio
+            Student reflection checkpoints
           </p>
           <h1 className="text-6xl font-black leading-[0.92] tracking-normal text-[#322219] sm:text-7xl">
-            Student's Companion
+            Checkpoint
           </h1>
           <p className="mt-6 max-w-xl text-lg leading-8 text-[#735846]">
             A warm space for students to capture moments, make meaning from their

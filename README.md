@@ -1,6 +1,6 @@
-# Student's Companion
+# Checkpoint
 
-A mobile-first student portfolio MVP for secondary school reflections, built with Next.js, Tailwind CSS, Firebase Auth, Firestore, and Vercel.
+A mobile-first student reflection and portfolio MVP for secondary school checkpoints, built with Next.js, Tailwind CSS, Firebase Auth, Firestore, and Vercel.
 
 ## What is included
 
