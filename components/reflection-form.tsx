@@ -5,25 +5,24 @@ import { ChangeEvent, FormEvent, useEffect, useMemo, useRef, useState } from "re
 import { useAuth } from "@/components/auth-provider";
 import { PromptChips } from "@/components/prompt-chips";
 import { useUiMode } from "@/components/ui-mode";
+import {
+  COMPETENCY_OPTIONS,
+  REFLECTION_TYPE_OPTIONS,
+  getReflectionTypeLabel
+} from "@/lib/reflection-utils";
 import { createReflectionStat } from "@/lib/reflection-stats";
+import {
+  endLessonReflectionSession,
+  startLessonReflectionSession,
+  subscribeToLessonReflectionSession
+} from "@/lib/reflection-sessions";
 import { createReflection } from "@/lib/reflections";
 import { uploadReflectionImages } from "@/lib/storage";
-import type { ReflectionVisibility } from "@/types/reflection";
-
-const categories = ["Class learning", "Project work", "CCA", "Service", "Personal growth"];
-const competencies = [
-  "Critical Thinking",
-  "Adaptive Thinking",
-  "Inventive Thinking",
-  "Collaboration Skills",
-  "Communication Skills",
-  "Information Skills",
-  "Civic Literacy",
-  "Global Literacy",
-  "Cross-Cultural Literacy"
-];
+import type { ReflectionType, ReflectionVisibility } from "@/types/reflection";
+import type { ReflectionSession } from "@/types/reflection-session";
 
 const MAX_IMAGES = 5;
+const MAX_COMPETENCIES = 3;
 const ATTENDING_CHIPS = [
   "I noticed...",
   "I felt...",
@@ -52,9 +51,14 @@ type SelectedImage = {
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
 
-function buildReflectionTitle(momentText: string) {
+function buildReflectionTitle(momentText: string, reflectionType: ReflectionType, lessonTitle: string) {
   const trimmed = momentText.trim();
-  if (!trimmed) return "Captured moment";
+  if (!trimmed) {
+    if (reflectionType === "lesson" && lessonTitle.trim()) {
+      return lessonTitle.trim();
+    }
+    return "Captured moment";
+  }
   return trimmed.length > 80 ? `${trimmed.slice(0, 80)}...` : trimmed;
 }
 
@@ -75,22 +79,31 @@ export function ReflectionForm() {
   const { mode } = useUiMode();
   const isStudio = mode === "studio";
 
+  const [entryType, setEntryType] = useState<ReflectionType | null>(null);
+  const [lessonTitleDraft, setLessonTitleDraft] = useState("");
+  const [activeLessonSession, setActiveLessonSession] = useState<ReflectionSession | null>(null);
   const [step, setStep] = useState(1);
   const [momentText, setMomentText] = useState("");
   const [elaborationText, setElaborationText] = useState("");
-  const [category, setCategory] = useState(categories[0]);
-  const [competency, setCompetency] = useState(competencies[0]);
+  const [competencies, setCompetencies] = useState<string[]>([]);
   const [visibility, setVisibility] = useState<ReflectionVisibility>("private");
   const [files, setFiles] = useState<SelectedImage[]>([]);
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [error, setError] = useState("");
+  const [endingLesson, setEndingLesson] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const libraryInputRef = useRef<HTMLInputElement | null>(null);
   const momentTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const elaborationTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
-  const canContinueStep1 = momentText.trim().length > 0 || files.length > 0;
-  const canSave = canContinueStep1 && Boolean(competency) && Boolean(category);
+  useEffect(() => {
+    if (!user) return;
+    return subscribeToLessonReflectionSession(
+      user.uid,
+      setActiveLessonSession,
+      currentError => setError(currentError.message)
+    );
+  }, [user]);
 
   useEffect(() => {
     return () => {
@@ -98,21 +111,49 @@ export function ReflectionForm() {
     };
   }, [files]);
 
+  const lessonTitle = activeLessonSession?.lessonTitle ?? lessonTitleDraft.trim();
+  const canContinueStep1 = momentText.trim().length > 0 || files.length > 0;
+  const canSave = canContinueStep1;
+
   function replaceFiles(next: SelectedImage[]) {
     files.forEach(image => URL.revokeObjectURL(image.previewUrl));
     setFiles(next);
   }
 
   function resetFlow() {
+    setEntryType(null);
+    setLessonTitleDraft("");
     setStep(1);
     setMomentText("");
     setElaborationText("");
-    setCategory(categories[0]);
-    setCompetency(competencies[0]);
+    setCompetencies([]);
     setVisibility("private");
     replaceFiles([]);
     setStatus("idle");
     setError("");
+  }
+
+  function prepareAnotherLessonCheckpoint() {
+    setEntryType("lesson");
+    setLessonTitleDraft(lessonTitle);
+    setStep(1);
+    setMomentText("");
+    setElaborationText("");
+    setCompetencies([]);
+    setVisibility("private");
+    replaceFiles([]);
+    setStatus("idle");
+    setError("");
+  }
+
+  function beginReflectionType(type: ReflectionType) {
+    setEntryType(type);
+    setStep(type === "lesson" && !activeLessonSession ? 0 : 1);
+    setStatus("idle");
+    setError("");
+    if (type !== "lesson") {
+      setLessonTitleDraft("");
+    }
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -177,9 +218,43 @@ export function ReflectionForm() {
     });
   }
 
+  function toggleCompetency(item: string) {
+    setCompetencies(current => {
+      if (current.includes(item)) {
+        return current.filter(value => value !== item);
+      }
+      if (current.length >= MAX_COMPETENCIES) {
+        return current;
+      }
+      return [...current, item];
+    });
+  }
+
+  async function handleEndLessonSession() {
+    if (!user) return;
+    setEndingLesson(true);
+    setError("");
+    try {
+      await endLessonReflectionSession(user.uid);
+      if (entryType === "lesson") {
+        resetFlow();
+      }
+    } catch {
+      setError("Could not end this lesson reflection session. Please try again.");
+    } finally {
+      setEndingLesson(false);
+    }
+  }
+
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (!user || !canSave) return;
+    if (!user || !entryType || !canSave) return;
+
+    const normalizedLessonTitle = entryType === "lesson" ? lessonTitle.trim() : "";
+    if (entryType === "lesson" && !normalizedLessonTitle) {
+      setError("Add the lesson name before saving lesson reflections.");
+      return;
+    }
 
     setStatus("saving");
     setError("");
@@ -192,23 +267,42 @@ export function ReflectionForm() {
           )
         : [];
 
+      const nextVisibility: ReflectionVisibility =
+        entryType === "lesson" ? "shared_with_teacher" : visibility;
+
       await createReflection({
         userId: user.uid,
         studentName: user.displayName ?? "Student",
         studentEmail: user.email ?? "",
-        title: buildReflectionTitle(momentText),
+        title: buildReflectionTitle(momentText, entryType, normalizedLessonTitle),
         body: buildReflectionBody(momentText, elaborationText),
-        category,
-        competency,
-        visibility,
+        reflectionType: entryType,
+        lessonTitle: normalizedLessonTitle || undefined,
+        competencies,
+        visibility: nextVisibility,
         images
       });
+
+      if (entryType === "lesson" && !activeLessonSession && normalizedLessonTitle) {
+        await startLessonReflectionSession(user.uid, normalizedLessonTitle);
+      }
+
       await createReflectionStat({
-        competency,
-        category,
-        visibility,
+        reflectionType: entryType,
+        visibility: nextVisibility,
         monthKey: new Date().toISOString().slice(0, 7)
       });
+
+      await Promise.all(
+        competencies.map(competencyTag =>
+          createReflectionStat({
+            reflectionType: entryType,
+            competencyTag,
+            visibility: nextVisibility,
+            monthKey: new Date().toISOString().slice(0, 7)
+          })
+        )
+      );
 
       setStatus("saved");
     } catch {
@@ -217,19 +311,24 @@ export function ReflectionForm() {
     }
   }
 
-  const stepLabel = useMemo(() => `Step ${step} of 4`, [step]);
+  const totalSteps = entryType === "lesson" ? (activeLessonSession ? 3 : 4) : 4;
+  const displayStep = entryType === "lesson" ? step + (activeLessonSession ? 0 : 1) : step;
+  const stepLabel = useMemo(
+    () => `Step ${displayStep} of ${totalSteps}`,
+    [displayStep, totalSteps]
+  );
   const stepCardClass = useMemo(() => {
     if (isStudio) {
-      if (step === 1) return "studio-step-capture";
+      if (!entryType || step <= 1) return "studio-step-capture";
       if (step === 2) return "studio-step-meaning";
       if (step === 3) return "studio-step-growth";
       return "studio-step-visibility";
     }
-    if (step === 1) return "border-orange-200/80 bg-orange-50/85";
+    if (!entryType || step <= 1) return "border-orange-200/80 bg-orange-50/85";
     if (step === 2) return "border-amber-200/80 bg-amber-50/85";
     if (step === 3) return "border-sky-200/80 bg-sky-50/85";
     return "border-violet-200/80 bg-violet-50/85";
-  }, [isStudio, step]);
+  }, [entryType, isStudio, step]);
 
   const textAreaClass = isStudio
     ? "studio-open-input w-full resize-none text-base leading-8 outline-none"
@@ -250,354 +349,396 @@ export function ReflectionForm() {
       onSubmit={handleSave}
       className={`${isStudio ? "studio-capture-card" : "rounded-3xl border p-4 shadow-soft backdrop-blur sm:p-5"} ${stepCardClass}`}
     >
-      <div className="mb-4 flex items-center justify-between">
-        <p className={isStudio ? "studio-kicker" : "text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"}>
-          {stepLabel}
-        </p>
-        <div className="flex gap-1.5">
-          {[1, 2, 3, 4].map(point => (
-            <span
-              key={point}
-              className={`h-1.5 w-7 rounded-full ${
-                point <= step ? "bg-blue-600" : "bg-slate-200"
-              }`}
-            />
-          ))}
-        </div>
-      </div>
-
-      {status === "saved" ? (
-        <div className="space-y-4">
-          <h2 className="display-title">Saved to timeline</h2>
-          <p className="text-sm leading-6 text-slate-600">
-            Nice one. Your moment is now part of your growth story.
+      {activeLessonSession ? (
+        <div className="mb-4 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3">
+          <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-700">
+            Lesson reflection session
           </p>
-          <div className="grid gap-2 sm:grid-cols-2">
-            <Link
-              href="/timeline"
-              className="btn-primary grid place-items-center"
-            >
-              View timeline
-            </Link>
+            <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <p className="text-sm font-semibold text-teal-900">
+                Reflecting in: {activeLessonSession.lessonTitle}
+              </p>
+              <p className="text-xs text-teal-700">
+                Lesson checkpoints will be shared live with teachers.
+              </p>
+            </div>
             <button
               type="button"
-              onClick={resetFlow}
-              className="btn-secondary"
+              onClick={handleEndLessonSession}
+              disabled={endingLesson}
+              className="btn-secondary w-auto rounded-full px-4 disabled:cursor-not-allowed disabled:opacity-45"
             >
-              Add another moment
+              {endingLesson ? "Ending..." : "End lesson reflection"}
             </button>
           </div>
         </div>
+      ) : null}
+
+      {!entryType ? (
+        <div className="space-y-4">
+          <div className="mb-4 flex items-center justify-between">
+            <p className={isStudio ? "studio-kicker" : "text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"}>
+              Start reflection
+            </p>
+          </div>
+          <div className={isStudio ? "studio-prompt-block" : ""}>
+            <h2 className="display-title">What are you reflecting for today?</h2>
+            <p className="mt-1 text-sm leading-6 text-slate-500">
+              Choose the kind of checkpoint you want to capture.
+            </p>
+          </div>
+
+          <div className="grid gap-2">
+            {REFLECTION_TYPE_OPTIONS.map(option => (
+              <button
+                key={option.id}
+                type="button"
+                onClick={() => beginReflectionType(option.id)}
+                className={isStudio ? "studio-choice-row" : "flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left"}
+              >
+                <span>
+                  <span className="block text-sm font-semibold text-slate-800">{option.label}</span>
+                  <span className="block text-xs text-slate-500">
+                    {option.id === "general"
+                      ? "A general moment from your day."
+                      : option.id === "lesson"
+                        ? "A lesson checkpoint that teachers can see live."
+                        : "A checkpoint from co-curricular learning."}
+                  </span>
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {entryType === "lesson" || !entryType ? null : null}
+        </div>
       ) : (
         <>
-          {step === 1 ? (
+          <div className="mb-4 flex items-center justify-between">
+            <p className={isStudio ? "studio-kicker" : "text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"}>
+              {stepLabel}
+            </p>
+            <div className="flex gap-1.5">
+              {Array.from({ length: totalSteps }, (_, index) => index + 1).map(point => (
+                <span
+                  key={point}
+                  className={`h-1.5 w-7 rounded-full ${point <= displayStep ? "bg-blue-600" : "bg-slate-200"}`}
+                />
+              ))}
+            </div>
+          </div>
+
+          {status === "saved" ? (
             <div className="space-y-4">
-              <div className={isStudio ? "studio-prompt-block" : ""}>
-                <h2 className="display-title">
-                  What is one moment that stayed with you today?
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Choose something you noticed, felt, tried, struggled with, or want to remember.
-                </p>
+              <h2 className="display-title">Saved to timeline</h2>
+              <p className="text-sm leading-6 text-slate-600">
+                {entryType === "lesson"
+                  ? "Checkpoint saved and visible to your teacher. Keep adding more if the lesson continues."
+                  : "Nice one. Your moment is now part of your growth story."}
+              </p>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <Link href="/timeline" className="btn-primary grid place-items-center">
+                  View timeline
+                </Link>
+                <button
+                  type="button"
+                  onClick={entryType === "lesson" ? prepareAnotherLessonCheckpoint : resetFlow}
+                  className="btn-secondary"
+                >
+                  {entryType === "lesson" ? "Add another checkpoint" : "Add another moment"}
+                </button>
               </div>
-
-              <label className="block">
-                <textarea
-                  ref={momentTextareaRef}
-                  value={momentText}
-                  onChange={event => setMomentText(event.target.value)}
-                  placeholder="I noticed..."
-                  rows={4}
-                  className={textAreaClass}
-                />
-              </label>
-              <PromptChips
-                chips={ATTENDING_CHIPS}
-                onSelect={chip =>
-                  insertChipText(
-                    chip,
-                    momentText,
-                    setMomentText,
-                    momentTextareaRef.current
-                  )
-                }
-              />
-
-              <label className="block">
-                <span className="text-sm font-semibold text-slate-800">
-                  Add photo if it helps you remember.
-                </span>
-                <div className={isStudio ? "mt-3 grid grid-cols-2 gap-2" : "mt-2 grid gap-2 sm:grid-cols-2"}>
-                  <button
-                    type="button"
-                    onClick={() => cameraInputRef.current?.click()}
-                    className="btn-secondary"
-                  >
-                    Take Photo
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => libraryInputRef.current?.click()}
-                    className="btn-secondary"
-                  >
-                    Choose from Library
-                  </button>
-                </div>
-                <input
-                  ref={cameraInputRef}
-                  type="file"
-                  accept="image/*"
-                  capture="environment"
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-                <input
-                  ref={libraryInputRef}
-                  type="file"
-                  accept="image/*"
-                  multiple
-                  onChange={handleFileChange}
-                  className="hidden"
-                />
-              </label>
-
-              {files.length ? (
-                <div className={isStudio ? "studio-photo-strip" : "grid grid-cols-2 gap-2 sm:grid-cols-3"}>
-                  {files.map((image, index) => (
-                    <div key={`${image.file.name}-${image.file.size}-${index}`} className={isStudio ? "studio-photo-tile" : "rounded-xl border border-slate-200 bg-white p-2"}>
-                      <img
-                        src={image.previewUrl}
-                        alt={image.file.name}
-                        className={isStudio ? "h-32 w-full object-cover" : "h-24 w-full rounded-lg object-cover"}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => removeImage(index)}
-                        className="btn-tertiary mt-2 w-full border-rose-200 bg-rose-50 text-rose-600"
-                      >
-                        Remove
-                      </button>
-                    </div>
-                  ))}
+            </div>
+          ) : (
+            <>
+              {entryType === "lesson" && !activeLessonSession && step === 0 ? (
+                <div className="space-y-4">
+                  <div className={isStudio ? "studio-prompt-block" : ""}>
+                    <h2 className="display-title">What lesson are you reflecting in?</h2>
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      Add the lesson name once. We’ll keep future checkpoints under it until you end the session.
+                    </p>
+                  </div>
+                  <input
+                    value={lessonTitleDraft}
+                    onChange={event => setLessonTitleDraft(event.target.value)}
+                    placeholder="Sec 2 Math, English writing, Chemistry practical..."
+                    className={isStudio ? "studio-open-input min-h-12 w-full text-base outline-none" : "min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base outline-none focus:border-blue-500"}
+                  />
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="button"
+                      onClick={() => setStep(1)}
+                      disabled={!lessonTitleDraft.trim()}
+                      className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      Continue
+                    </button>
+                    <button type="button" onClick={resetFlow} className="btn-secondary">
+                      Back
+                    </button>
+                  </div>
                 </div>
               ) : null}
 
-              <button
-                type="button"
-                disabled={!canContinueStep1}
-                onClick={() => setStep(2)}
-                className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
-              >
-                Continue
-              </button>
-            </div>
-          ) : null}
+              {((entryType !== "lesson" && step === 1) || (entryType === "lesson" && step === 1)) ? (
+                <div className="space-y-4">
+                  <div className={isStudio ? "studio-prompt-block" : ""}>
+                    <h2 className="display-title">What is one moment that stayed with you today?</h2>
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      {entryType === "lesson"
+                        ? `This checkpoint will be saved under ${lessonTitle}.`
+                        : `Choose something from ${getReflectionTypeLabel(entryType).toLowerCase()} that you noticed, felt, tried, struggled with, or want to remember.`}
+                    </p>
+                  </div>
 
-          {step === 2 ? (
-            <div className="space-y-4">
-              <div className={isStudio ? "studio-prompt-block" : ""}>
-                <h2 className="display-title">
-                  Why do you think this stayed with you?
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-                  What might it show about you, others, or the situation?
-                </p>
-              </div>
-              <textarea
-                ref={elaborationTextareaRef}
-                value={elaborationText}
-                onChange={event => setElaborationText(event.target.value)}
-                placeholder="This stayed with me because..."
-                rows={5}
-                className={textAreaClass}
-              />
-              <PromptChips
-                chips={INTERPRETING_CHIPS}
-                onSelect={chip =>
-                  insertChipText(
-                    chip,
-                    elaborationText,
-                    setElaborationText,
-                    elaborationTextareaRef.current
-                  )
-                }
-              />
-              <div className="grid gap-2 sm:grid-cols-3">
-                <button
-                  type="button"
-                  onClick={() => setStep(3)}
-                  className="btn-primary sm:col-span-1"
-                >
-                  Continue
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep(1)}
-                  className="btn-secondary"
-                >
-                  Back
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep(3)}
-                  className="btn-secondary"
-                >
-                  Skip for now
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          {step === 3 ? (
-            <div className="space-y-4">
-              <div className={isStudio ? "studio-prompt-block" : ""}>
-                <h2 className="display-title">
-                  What kind of growth does this show?
-                </h2>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Pick the one that fits best, then choose context.
-                </p>
-              </div>
-
-              <div>
-                <p className="mb-2 text-sm font-semibold text-slate-800">21CC growth tag</p>
-                <div className={isStudio ? "studio-chip-cloud" : "grid gap-2 sm:grid-cols-2"}>
-                  {competencies.map(item => (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setCompetency(item)}
-                      className={chipClass(competency === item)}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div>
-                <p className="mb-2 text-sm font-semibold text-slate-800">Context</p>
-                <div className={isStudio ? "studio-chip-cloud compact" : "grid gap-2 sm:grid-cols-2"}>
-                  {categories.map(item => (
-                    <button
-                      key={item}
-                      type="button"
-                      onClick={() => setCategory(item)}
-                      className={chipClass(category === item, "teal")}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <div className="grid gap-2 sm:grid-cols-2">
-                <button
-                  type="button"
-                  onClick={() => setStep(4)}
-                  className="btn-primary"
-                >
-                  Continue
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="btn-secondary"
-                >
-                  Back
-                </button>
-              </div>
-            </div>
-          ) : null}
-
-          {step === 4 ? (
-            <div className="space-y-4">
-              <div className={isStudio ? "studio-prompt-block" : ""}>
-                <h2 className="display-title">Who should see this?</h2>
-                <p className="mt-1 text-sm leading-6 text-slate-500">
-                  Sharing with teachers can help you get ideas and guidance. You can
-                  keep this private if you prefer.
-                </p>
-              </div>
-
-              <div className="space-y-2">
-                {[
-                  [
-                    "private",
-                    "Private",
-                    "Only you can see this entry."
-                  ],
-                  [
-                    "shared_with_teacher",
-                    "Share with teacher",
-                    "Teachers can view this and give feedback."
-                  ]
-                ].map(([value, label, help]) => (
-                  <label
-                    key={value}
-                    className={
-                      isStudio
-                        ? `studio-choice-row ${visibility === value ? "selected" : ""}`
-                        : `flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 ${
-                            visibility === value
-                              ? "border-blue-400 bg-blue-50"
-                              : "border-slate-200 bg-white"
-                          }`
-                    }
-                  >
-                    <input
-                      type="radio"
-                      name="visibility"
-                      value={value}
-                      checked={visibility === value}
-                      onChange={event =>
-                        setVisibility(event.target.value as ReflectionVisibility)
-                      }
-                      className="mt-1 size-4 accent-blue-600"
+                  <label className="block">
+                    <textarea
+                      ref={momentTextareaRef}
+                      value={momentText}
+                      onChange={event => setMomentText(event.target.value)}
+                      placeholder="I noticed..."
+                      rows={4}
+                      className={textAreaClass}
                     />
-                    <span>
-                      <span
-                        className={`block text-sm font-semibold ${
-                          visibility === value ? "text-blue-700" : "text-slate-700"
-                        }`}
-                      >
-                        {label}
-                      </span>
-                      <span className="block text-xs text-slate-500">{help}</span>
-                    </span>
                   </label>
-                ))}
-              </div>
+                  <PromptChips
+                    chips={ATTENDING_CHIPS}
+                    onSelect={chip =>
+                      insertChipText(chip, momentText, setMomentText, momentTextareaRef.current)
+                    }
+                  />
 
-              <div className="grid gap-2 sm:grid-cols-2">
-                <button
-                  type="submit"
-                  disabled={status === "saving" || !canSave}
-                  className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
-                >
-                  {status === "saving" ? "Saving..." : "Save moment"}
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setStep(3)}
-                  className="btn-secondary"
-                >
-                  Back
-                </button>
-              </div>
-            </div>
-          ) : null}
+                  <label className="block">
+                    <span className="text-sm font-semibold text-slate-800">
+                      Add photo if it helps you remember.
+                    </span>
+                    <div className={isStudio ? "mt-3 grid grid-cols-2 gap-2" : "mt-2 grid gap-2 sm:grid-cols-2"}>
+                      <button type="button" onClick={() => cameraInputRef.current?.click()} className="btn-secondary">
+                        Take Photo
+                      </button>
+                      <button type="button" onClick={() => libraryInputRef.current?.click()} className="btn-secondary">
+                        Choose from Library
+                      </button>
+                    </div>
+                    <input
+                      ref={cameraInputRef}
+                      type="file"
+                      accept="image/*"
+                      capture="environment"
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                    <input
+                      ref={libraryInputRef}
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      onChange={handleFileChange}
+                      className="hidden"
+                    />
+                  </label>
 
-          {status === "error" ? (
-            <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
-              Something went wrong while saving. Please try again.
-            </p>
-          ) : null}
-          {error ? (
-            <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
-              {error}
-            </p>
-          ) : null}
+                  {files.length ? (
+                    <div className={isStudio ? "studio-photo-strip" : "grid grid-cols-2 gap-2 sm:grid-cols-3"}>
+                      {files.map((image, index) => (
+                        <div key={`${image.file.name}-${image.file.size}-${index}`} className={isStudio ? "studio-photo-tile" : "rounded-xl border border-slate-200 bg-white p-2"}>
+                          <img
+                            src={image.previewUrl}
+                            alt={image.file.name}
+                            className={isStudio ? "h-32 w-full object-cover" : "h-24 w-full rounded-lg object-cover"}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => removeImage(index)}
+                            className="btn-tertiary mt-2 w-full border-rose-200 bg-rose-50 text-rose-600"
+                          >
+                            Remove
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  ) : null}
+
+                  <button
+                    type="button"
+                    disabled={!canContinueStep1}
+                    onClick={() => setStep(current => current + 1)}
+                    className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    Continue
+                  </button>
+                </div>
+              ) : null}
+
+              {((entryType !== "lesson" && step === 2) || (entryType === "lesson" && step === 2)) ? (
+                <div className="space-y-4">
+                  <div className={isStudio ? "studio-prompt-block" : ""}>
+                    <h2 className="display-title">Why do you think this stayed with you?</h2>
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      What might it show about you, others, or the situation?
+                    </p>
+                  </div>
+                  <textarea
+                    ref={elaborationTextareaRef}
+                    value={elaborationText}
+                    onChange={event => setElaborationText(event.target.value)}
+                    placeholder="This stayed with me because..."
+                    rows={5}
+                    className={textAreaClass}
+                  />
+                  <PromptChips
+                    chips={INTERPRETING_CHIPS}
+                    onSelect={chip =>
+                      insertChipText(chip, elaborationText, setElaborationText, elaborationTextareaRef.current)
+                    }
+                  />
+                  <div className="grid gap-2 sm:grid-cols-3">
+                    <button type="button" onClick={() => setStep(current => current + 1)} className="btn-primary sm:col-span-1">
+                      Continue
+                    </button>
+                    <button type="button" onClick={() => setStep(current => current - 1)} className="btn-secondary">
+                      Back
+                    </button>
+                    <button type="button" onClick={() => setStep(current => current + 1)} className="btn-secondary">
+                      Skip for now
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {((entryType !== "lesson" && step === 3) || (entryType === "lesson" && step === 3)) ? (
+                <div className="space-y-4">
+                  <div className={isStudio ? "studio-prompt-block" : ""}>
+                    <h2 className="display-title">What kind of growth does this show?</h2>
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      Optional 21CC tags. Choose up to {MAX_COMPETENCIES}.
+                    </p>
+                  </div>
+
+                  <div className="flex items-center justify-between">
+                    <p className="text-sm font-semibold text-slate-800">21CC tags</p>
+                    <span className="text-xs font-semibold text-slate-500">
+                      {competencies.length}/{MAX_COMPETENCIES}
+                    </span>
+                  </div>
+                  <div className={isStudio ? "studio-chip-cloud" : "grid gap-2 sm:grid-cols-2"}>
+                    {COMPETENCY_OPTIONS.map(item => (
+                      <button
+                        key={item}
+                        type="button"
+                        onClick={() => toggleCompetency(item)}
+                        className={chipClass(competencies.includes(item))}
+                      >
+                        {item}
+                      </button>
+                    ))}
+                  </div>
+
+                  {entryType === "lesson" ? (
+                    <div className="rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-800">
+                      Lesson reflections are always visible to teachers so they can respond during class.
+                    </div>
+                  ) : null}
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    {entryType === "lesson" ? (
+                      <>
+                        <button
+                          type="submit"
+                          disabled={status === "saving" || !canSave}
+                          className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
+                        >
+                          {status === "saving" ? "Saving..." : "Save checkpoint"}
+                        </button>
+                        <button type="button" onClick={() => setStep(current => current - 1)} className="btn-secondary">
+                          Back
+                        </button>
+                      </>
+                    ) : (
+                      <>
+                        <button type="button" onClick={() => setStep(4)} className="btn-primary">
+                          Continue
+                        </button>
+                        <button type="button" onClick={() => setStep(2)} className="btn-secondary">
+                          Back
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              ) : null}
+
+              {entryType !== "lesson" && step === 4 ? (
+                <div className="space-y-4">
+                  <div className={isStudio ? "studio-prompt-block" : ""}>
+                    <h2 className="display-title">Who should see this?</h2>
+                    <p className="mt-1 text-sm leading-6 text-slate-500">
+                      Sharing with teachers can help you get ideas and guidance. You can keep this private if you prefer.
+                    </p>
+                  </div>
+
+                  <div className="space-y-2">
+                    {[
+                      ["private", "Private", "Only you can see this entry."],
+                      ["shared_with_teacher", "Share with teacher", "Teachers can view this and give feedback."]
+                    ].map(([value, label, help]) => (
+                      <label
+                        key={value}
+                        className={
+                          isStudio
+                            ? `studio-choice-row ${visibility === value ? "selected" : ""}`
+                            : `flex cursor-pointer items-start gap-3 rounded-2xl border px-4 py-3 ${
+                                visibility === value ? "border-blue-400 bg-blue-50" : "border-slate-200 bg-white"
+                              }`
+                        }
+                      >
+                        <input
+                          type="radio"
+                          name="visibility"
+                          value={value}
+                          checked={visibility === value}
+                          onChange={event => setVisibility(event.target.value as ReflectionVisibility)}
+                          className="mt-1 size-4 accent-blue-600"
+                        />
+                        <span>
+                          <span className={`block text-sm font-semibold ${visibility === value ? "text-blue-700" : "text-slate-700"}`}>
+                            {label}
+                          </span>
+                          <span className="block text-xs text-slate-500">{help}</span>
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+
+                  <div className="grid gap-2 sm:grid-cols-2">
+                    <button
+                      type="submit"
+                      disabled={status === "saving" || !canSave}
+                      className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      {status === "saving" ? "Saving..." : "Save moment"}
+                    </button>
+                    <button type="button" onClick={() => setStep(3)} className="btn-secondary">
+                      Back
+                    </button>
+                  </div>
+                </div>
+              ) : null}
+
+              {status === "error" ? (
+                <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
+                  Something went wrong while saving. Please try again.
+                </p>
+              ) : null}
+              {error ? (
+                <p className="mt-3 rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
+                  {error}
+                </p>
+              ) : null}
+            </>
+          )}
         </>
       )}
     </form>

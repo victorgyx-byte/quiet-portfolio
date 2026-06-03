@@ -2,8 +2,9 @@ export type SlidesExportReflection = {
   reflectionId: string;
   title: string;
   body: string;
-  competency: string;
-  category: string;
+  competencies: string[];
+  reflectionType: "general" | "lesson" | "cca";
+  lessonTitle?: string;
   visibility: "private" | "shared_with_teacher";
   createdAt: string;
   images: Array<{

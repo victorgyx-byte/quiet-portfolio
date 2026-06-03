@@ -4,6 +4,12 @@ import { useEffect, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { useUiMode } from "@/components/ui-mode";
 import {
+  getReflectionCompetencyLabel,
+  getReflectionLessonTitle,
+  getReflectionType,
+  getReflectionTypeLabel
+} from "@/lib/reflection-utils";
+import {
   addReflectionFollowUp,
   deleteReflection,
   fetchStudentReflectionsPage
@@ -293,11 +299,16 @@ export function ReflectionTimeline() {
                         <div className={isStudio ? "p-4 sm:p-5" : "p-4"}>
                           <div className="flex flex-wrap items-center gap-2">
                             <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                              {reflection.competency}
+                              {getReflectionCompetencyLabel(reflection)}
                             </span>
                             <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
-                              {reflection.category}
+                              {getReflectionTypeLabel(getReflectionType(reflection))}
                             </span>
+                            {getReflectionType(reflection) === "lesson" && getReflectionLessonTitle(reflection) ? (
+                              <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                                {getReflectionLessonTitle(reflection)}
+                              </span>
+                            ) : null}
                             <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700">
                               {reflection.visibility === "private" ? "Private" : "Shared"}
                             </span>

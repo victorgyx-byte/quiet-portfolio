@@ -8,6 +8,7 @@ export type ReflectionImage = {
 };
 
 export type ReflectionVisibility = "private" | "shared_with_teacher";
+export type ReflectionType = "general" | "lesson" | "cca";
 
 export type FollowUpNote = {
   text: string;
@@ -28,8 +29,11 @@ export type Reflection = {
   studentEmail: string;
   title: string;
   body: string;
-  category: string;
-  competency: string;
+  reflectionType?: ReflectionType;
+  lessonTitle?: string;
+  competencies?: string[];
+  category?: string;
+  competency?: string;
   visibility: ReflectionVisibility;
   images: ReflectionImage[];
   followUpNotes?: FollowUpNote[];

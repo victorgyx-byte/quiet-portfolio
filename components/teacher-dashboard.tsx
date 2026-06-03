@@ -3,6 +3,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { createStudentNotification } from "@/lib/notifications";
+import {
+  getReflectionCompetencies,
+  getReflectionCompetencyLabel,
+  getReflectionLessonTitle,
+  getReflectionType,
+  getReflectionTypeLabel
+} from "@/lib/reflection-utils";
 import { subscribeToReflectionStats } from "@/lib/reflection-stats";
 import { addTeacherFeedback, subscribeToTeacherReflections } from "@/lib/reflections";
 import type { ReflectionStat } from "@/types/reflection-stats";
@@ -22,6 +29,12 @@ function formatDate(reflection: Reflection) {
 
 function getStudentKey(reflection: Reflection) {
   return reflection.studentEmail || reflection.userId;
+}
+
+function getStatReflectionType(stat: ReflectionStat) {
+  if (stat.reflectionType) return stat.reflectionType;
+  if ((stat.category ?? "").toLowerCase() === "cca") return "cca" as const;
+  return "general" as const;
 }
 
 export function TeacherDashboard({ activeTab = "shared" }: { activeTab?: TeacherTab }) {
@@ -73,9 +86,12 @@ export function TeacherDashboard({ activeTab = "shared" }: { activeTab?: Teacher
   }, [reflections]);
 
   const competencies = useMemo(
-    () => [...new Set(reflections.map(reflection => reflection.competency))].sort(),
+    () =>
+      [...new Set(reflections.flatMap(reflection => getReflectionCompetencies(reflection)))].sort(),
     [reflections]
   );
+
+  const baseStats = useMemo(() => stats.filter(stat => !stat.competencyTag), [stats]);
 
   const filteredReflections = useMemo(
     () =>
@@ -83,7 +99,8 @@ export function TeacherDashboard({ activeTab = "shared" }: { activeTab?: Teacher
         const studentMatch =
           studentFilter === "all" || getStudentKey(reflection) === studentFilter;
         const competencyMatch =
-          competencyFilter === "all" || reflection.competency === competencyFilter;
+          competencyFilter === "all" ||
+          getReflectionCompetencies(reflection).includes(competencyFilter);
         return studentMatch && competencyMatch;
       }),
     [competencyFilter, reflections, studentFilter]
@@ -105,35 +122,37 @@ export function TeacherDashboard({ activeTab = "shared" }: { activeTab?: Teacher
 
   const competencyTrends = useMemo(
     () =>
-      [...new Set(stats.map(stat => stat.competency))]
+      [...new Set(stats.map(stat => stat.competencyTag ?? stat.competency).filter(Boolean))]
         .map(competency => ({
-          competency,
-          count: stats.filter(stat => stat.competency === competency).length
+          competency: competency as string,
+          count: stats.filter(
+            stat => (stat.competencyTag ?? stat.competency) === competency
+          ).length
         }))
         .sort((a, b) => b.count - a.count),
     [stats]
   );
 
-  const categoryTrends = useMemo(() => {
-    const categories = [...new Set(stats.map(stat => stat.category))];
-    return categories
-      .map(category => ({
-        category,
-        count: stats.filter(stat => stat.category === category).length
+  const reflectionTypeTrends = useMemo(() => {
+    const reflectionTypes = [...new Set(baseStats.map(getStatReflectionType))];
+    return reflectionTypes
+      .map(reflectionType => ({
+        reflectionType,
+        count: baseStats.filter(stat => getStatReflectionType(stat) === reflectionType).length
       }))
       .sort((a, b) => b.count - a.count);
-  }, [stats]);
+  }, [baseStats]);
 
   const visibilityTrends = useMemo(() => {
-    const shared = stats.filter(stat => stat.visibility === "shared_with_teacher").length;
-    const privateCount = stats.filter(stat => stat.visibility === "private").length;
+    const shared = baseStats.filter(stat => stat.visibility === "shared_with_teacher").length;
+    const privateCount = baseStats.filter(stat => stat.visibility === "private").length;
     return { shared, private: privateCount, total: shared + privateCount };
-  }, [stats]);
+  }, [baseStats]);
 
   const maxTrendCount = Math.max(
     1,
     ...competencyTrends.map(item => item.count),
-    ...categoryTrends.map(item => item.count)
+    ...reflectionTypeTrends.map(item => item.count)
   );
 
   async function handleFeedback(reflection: Reflection) {
@@ -185,7 +204,7 @@ export function TeacherDashboard({ activeTab = "shared" }: { activeTab?: Teacher
       <div className="grid grid-cols-3 gap-3">
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
           <p className="text-xs font-semibold text-slate-500">Class trend</p>
-          <p className="mt-2 text-3xl font-bold text-slate-900">{stats.length}</p>
+          <p className="mt-2 text-3xl font-bold text-slate-900">{baseStats.length}</p>
         </div>
         <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
           <p className="text-xs font-semibold text-slate-500">Students</p>
@@ -297,11 +316,16 @@ export function TeacherDashboard({ activeTab = "shared" }: { activeTab?: Teacher
                       >
                         <div className="flex flex-wrap items-center gap-2">
                           <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-                            {reflection.competency}
+                            {getReflectionCompetencyLabel(reflection)}
                           </span>
                           <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
-                            {reflection.category}
+                            {getReflectionTypeLabel(getReflectionType(reflection))}
                           </span>
+                          {getReflectionType(reflection) === "lesson" && getReflectionLessonTitle(reflection) ? (
+                            <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+                              Lesson: {getReflectionLessonTitle(reflection)}
+                            </span>
+                          ) : null}
                           <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">
                             {formatDate(reflection)}
                           </span>
@@ -436,15 +460,17 @@ export function TeacherDashboard({ activeTab = "shared" }: { activeTab?: Teacher
             </div>
 
             <div className="rounded-2xl border border-slate-200 bg-white p-4">
-              <h3 className="text-lg font-bold text-slate-900">Reflection context</h3>
+              <h3 className="text-lg font-bold text-slate-900">Reflection type</h3>
               <div className="mt-4 space-y-3">
-                {categoryTrends.length === 0 ? (
+                {reflectionTypeTrends.length === 0 ? (
                   <p className="text-sm text-slate-500">No shared reflections yet.</p>
                 ) : null}
-                {categoryTrends.map(item => (
-                  <div key={item.category}>
+                {reflectionTypeTrends.map(item => (
+                  <div key={item.reflectionType}>
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm font-semibold text-slate-700">{item.category}</p>
+                      <p className="text-sm font-semibold text-slate-700">
+                        {getReflectionTypeLabel(item.reflectionType)}
+                      </p>
                       <p className="text-xs font-bold text-slate-500">{item.count}</p>
                     </div>
                     <div className="mt-1 h-2 overflow-hidden rounded-full bg-slate-100">

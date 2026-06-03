@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getReflectionTypeLabel } from "@/lib/reflection-utils";
 import type {
   SlidesDeckIntegration,
   SlidesExportPayload,
@@ -368,7 +369,11 @@ async function appendReflectionSlide(
   const accentShapeId = safeId("accent", reflection.reflectionId);
 
   const { moment, meaning } = splitMomentBody(reflection.body);
-  const metaText = `${reflection.competency}  |  ${reflection.category}  |  ${formatDateLabel(reflection.createdAt)}`;
+  const competencyLabel =
+    reflection.competencies.length > 0 ? reflection.competencies.join(", ") : "No 21CC tag";
+  const reflectionTypeLabel = getReflectionTypeLabel(reflection.reflectionType);
+  const lessonLabel = reflection.lessonTitle ? `  |  ${reflection.lessonTitle}` : "";
+  const metaText = `${competencyLabel}  |  ${reflectionTypeLabel}${lessonLabel}  |  ${formatDateLabel(reflection.createdAt)}`;
 
   const requests: Record<string, unknown>[] = [
     createBlankSlide(slideId),

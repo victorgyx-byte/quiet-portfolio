@@ -6,6 +6,13 @@ import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/components/auth-provider";
 import { useUiMode } from "@/components/ui-mode";
 import {
+  getReflectionCompetencies,
+  getReflectionCompetencyLabel,
+  getReflectionLessonTitle,
+  getReflectionType,
+  getReflectionTypeLabel
+} from "@/lib/reflection-utils";
+import {
   addPortfolioUpdate,
   createPortfolio,
   deletePortfolio,
@@ -86,8 +93,13 @@ function ReflectionReferenceList({
             <span className="min-w-0">
               <span className="block text-sm font-semibold text-slate-900">{reflection.title}</span>
               <span className="mt-1 block text-xs text-slate-500">
-                {reflection.competency} | {formatDate(reflection.createdAt)}
+                {getReflectionCompetencyLabel(reflection)} | {formatDate(reflection.createdAt)}
               </span>
+              {getReflectionType(reflection) === "lesson" && getReflectionLessonTitle(reflection) ? (
+                <span className="mt-1 block text-xs text-slate-500">
+                  Lesson: {getReflectionLessonTitle(reflection)}
+                </span>
+              ) : null}
               <span className="mt-2 block whitespace-pre-line text-xs leading-5 text-slate-500">
                 {reflection.body.length > 180 ? `${reflection.body.slice(0, 180)}...` : reflection.body}
               </span>
@@ -361,8 +373,9 @@ export function PortfolioBuilder() {
         reflectionId: reflection.id,
         title: reflection.title,
         body: reflection.body,
-        competency: reflection.competency,
-        category: reflection.category,
+        competencies: getReflectionCompetencies(reflection),
+        reflectionType: getReflectionType(reflection),
+        lessonTitle: getReflectionLessonTitle(reflection) || undefined,
         visibility: reflection.visibility,
         createdAt: reflection.createdAt?.toDate().toISOString() ?? "",
         images: reflection.images ?? []
@@ -453,7 +466,7 @@ export function PortfolioBuilder() {
         doc.setFont("helvetica", "normal");
         doc.setFontSize(10);
         doc.text(
-          `${reflection.competency} | ${reflection.category} | ${formatDate(reflection.createdAt)}`,
+          `${getReflectionCompetencyLabel(reflection)} | ${getReflectionTypeLabel(getReflectionType(reflection))}${getReflectionLessonTitle(reflection) ? ` | ${getReflectionLessonTitle(reflection)}` : ""} | ${formatDate(reflection.createdAt)}`,
           margin,
           y
         );
