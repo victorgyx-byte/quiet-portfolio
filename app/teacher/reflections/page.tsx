@@ -1,13 +1,5 @@
-import { AppShell } from "@/components/app-shell";
-import { ProtectedRoute } from "@/components/protected-route";
-import { TeacherDashboard } from "@/components/teacher-dashboard";
+import { redirect } from "next/navigation";
 
-export default function TeacherReflectionsPage() {
-  return (
-    <AppShell>
-      <ProtectedRoute teacherOnly>
-        <TeacherDashboard activeTab="shared" />
-      </ProtectedRoute>
-    </AppShell>
-  );
+export default function TeacherReflectionsRedirectPage() {
+  redirect("/teacher/review");
 }

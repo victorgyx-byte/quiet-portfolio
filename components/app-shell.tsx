@@ -14,7 +14,8 @@ const links = [
 ];
 
 const teacherLinks = [
-  { href: "/teacher/reflections", label: "Reflections" },
+  { href: "/teacher", label: "Live inbox" },
+  { href: "/teacher/review", label: "Review" },
   { href: "/teacher/trends", label: "Trends" },
   { href: "/teacher/notifications", label: "Notifications" }
 ];
@@ -50,6 +51,24 @@ function NavIcon({ href, active }: { href: string; active: boolean }) {
       <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
         <rect {...common} x="4" y="3.5" width="16" height="17" rx="2.4" />
         <path {...common} d="M8 8h8M8 12h8M8 16h5" />
+      </svg>
+    );
+  }
+  if (href === "/teacher") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+        <path {...common} d="M4 6h16" />
+        <path {...common} d="M4 12h10" />
+        <path {...common} d="M4 18h7" />
+        <circle cx="18" cy="12" r="1.5" fill={stroke} />
+      </svg>
+    );
+  }
+  if (href === "/teacher/review") {
+    return (
+      <svg viewBox="0 0 24 24" className="h-4 w-4" aria-hidden="true">
+        <rect {...common} x="4" y="4" width="16" height="16" rx="2.4" />
+        <path {...common} d="M8 9h8M8 13h8M8 17h5" />
       </svg>
     );
   }
@@ -104,6 +123,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }
 
   function isActivePath(href: string) {
+    if (href === "/teacher") {
+      return pathname === "/teacher";
+    }
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
