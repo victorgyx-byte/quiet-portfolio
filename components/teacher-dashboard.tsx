@@ -352,7 +352,7 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
                 No lesson checkpoints are coming in yet. Once students submit lesson reflections, they will appear here live.
               </div>
             ) : (
-              <div className="mt-5 space-y-3">
+              <div className="mt-5 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">
                 {liveReflections.map(reflection => {
                   const isSelected = selectedLiveId === reflection.id;
                   return (
