@@ -4,6 +4,11 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { createStudentNotification } from "@/lib/notifications";
 import {
+  endLessonReflectionSession,
+  startLessonReflectionSession,
+  subscribeToActiveLessonReflectionSessions
+} from "@/lib/reflection-sessions";
+import {
   getReflectionCompetencies,
   getReflectionCompetencyLabel,
   getReflectionLessonTitle,
@@ -12,6 +17,7 @@ import {
 } from "@/lib/reflection-utils";
 import { subscribeToReflectionStats } from "@/lib/reflection-stats";
 import { addTeacherFeedback, subscribeToTeacherReflections } from "@/lib/reflections";
+import type { ReflectionSession } from "@/types/reflection-session";
 import type { ReflectionStat } from "@/types/reflection-stats";
 import type { Reflection, TeacherFeedbackNote } from "@/types/reflection";
 
@@ -64,7 +70,12 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
   const [studentFilter, setStudentFilter] = useState("all");
   const [competencyFilter, setCompetencyFilter] = useState("all");
   const [expandedId, setExpandedId] = useState<string | null>(null);
-  const [selectedLesson, setSelectedLesson] = useState("");
+  const [activeLessonSessions, setActiveLessonSessions] = useState<ReflectionSession[]>([]);
+  const [lessonTitleDraft, setLessonTitleDraft] = useState("");
+  const [lessonSessionStatus, setLessonSessionStatus] = useState<
+    "idle" | "starting" | "ending" | "error"
+  >("idle");
+  const [selectedLessonSessionId, setSelectedLessonSessionId] = useState("");
   const [selectedLiveId, setSelectedLiveId] = useState<string | null>(null);
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "saving" | "error">("idle");
@@ -90,6 +101,13 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
     );
   }, []);
 
+  useEffect(() => {
+    return subscribeToActiveLessonReflectionSessions(
+      setActiveLessonSessions,
+      currentError => setError(currentError.message)
+    );
+  }, []);
+
   const lessonReflections = useMemo(
     () =>
       reflections.filter(
@@ -104,36 +122,33 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
     [reflections]
   );
 
-  const lessonOptions = useMemo(() => {
-    const seen = new Set<string>();
-    return lessonReflections
-      .map(reflection => getReflectionLessonTitle(reflection))
-      .filter(Boolean)
-      .filter(lesson => {
-        if (seen.has(lesson)) return false;
-        seen.add(lesson);
-        return true;
-      });
-  }, [lessonReflections]);
+  const teacherOwnedActiveSession =
+    activeLessonSessions.find(session => session.userId === user?.uid) ?? null;
 
   useEffect(() => {
-    if (lessonOptions.length === 0) {
-      setSelectedLesson("");
+    if (activeLessonSessions.length === 0) {
+      setSelectedLessonSessionId("");
       return;
     }
-    if (!selectedLesson || !lessonOptions.includes(selectedLesson)) {
-      setSelectedLesson(lessonOptions[0]);
+    if (
+      !selectedLessonSessionId ||
+      !activeLessonSessions.some(session => session.id === selectedLessonSessionId)
+    ) {
+      setSelectedLessonSessionId(teacherOwnedActiveSession?.id ?? activeLessonSessions[0].id);
     }
-  }, [lessonOptions, selectedLesson]);
+  }, [activeLessonSessions, selectedLessonSessionId, teacherOwnedActiveSession?.id]);
+
+  const selectedLessonSession =
+    activeLessonSessions.find(session => session.id === selectedLessonSessionId) ?? null;
 
   const liveReflections = useMemo(
     () =>
-      selectedLesson
+      selectedLessonSessionId
         ? lessonReflections.filter(
-            reflection => getReflectionLessonTitle(reflection) === selectedLesson
+            reflection => reflection.lessonSessionId === selectedLessonSessionId
           )
         : [],
-    [lessonReflections, selectedLesson]
+    [lessonReflections, selectedLessonSessionId]
   );
 
   useEffect(() => {
@@ -269,6 +284,39 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
     }
   }
 
+  async function handleStartLessonStream() {
+    if (!user?.uid || !user.email || !lessonTitleDraft.trim()) return;
+    setLessonSessionStatus("starting");
+    setError("");
+    try {
+      const sessionId = await startLessonReflectionSession({
+        userId: user.uid,
+        teacherName: user.displayName ?? "Teacher",
+        teacherEmail: user.email,
+        lessonTitle: lessonTitleDraft.trim()
+      });
+      setSelectedLessonSessionId(sessionId);
+      setLessonTitleDraft("");
+      setLessonSessionStatus("idle");
+    } catch {
+      setLessonSessionStatus("error");
+      setError("Could not start the lesson stream. Please try again.");
+    }
+  }
+
+  async function handleEndLessonStream() {
+    if (!teacherOwnedActiveSession) return;
+    setLessonSessionStatus("ending");
+    setError("");
+    try {
+      await endLessonReflectionSession(teacherOwnedActiveSession.id);
+      setLessonSessionStatus("idle");
+    } catch {
+      setLessonSessionStatus("error");
+      setError("Could not end the lesson stream. Please try again.");
+    }
+  }
+
   const liveStudentCount = new Set(liveReflections.map(getStudentKey)).size;
 
   return (
@@ -301,9 +349,9 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
         <>
           <div className="grid gap-3 md:grid-cols-3">
             <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
-              <p className="text-xs font-semibold text-slate-500">Current lesson</p>
+              <p className="text-xs font-semibold text-slate-500">Current lesson stream</p>
               <p className="mt-2 text-xl font-bold text-slate-900">
-                {selectedLesson || "No live lessons yet"}
+                {selectedLessonSession?.lessonTitle || teacherOwnedActiveSession?.lessonTitle || "No live lesson yet"}
               </p>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
@@ -318,26 +366,59 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
 
           <section className="glass-card rounded-3xl p-5 shadow-soft">
             <div className="grid gap-3 lg:grid-cols-[minmax(0,18rem)_minmax(0,1fr)]">
-              <label className="block text-sm font-semibold text-slate-700">
-                Lesson stream
-                <select
-                  value={selectedLesson}
-                  onChange={event => setSelectedLesson(event.target.value)}
-                  className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500"
-                  disabled={lessonOptions.length === 0}
-                >
-                  {lessonOptions.length === 0 ? (
-                    <option value="">No live lessons yet</option>
-                  ) : null}
-                  {lessonOptions.map(lesson => (
-                    <option key={lesson} value={lesson}>
-                      {lesson}
-                    </option>
-                  ))}
-                </select>
-              </label>
+              <div className="space-y-3">
+                <label className="block text-sm font-semibold text-slate-700">
+                  Active lesson stream
+                  <select
+                    value={selectedLessonSessionId}
+                    onChange={event => setSelectedLessonSessionId(event.target.value)}
+                    className="mt-2 min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500"
+                    disabled={activeLessonSessions.length === 0}
+                  >
+                    {activeLessonSessions.length === 0 ? (
+                      <option value="">No active lesson streams</option>
+                    ) : null}
+                    {activeLessonSessions.map(session => (
+                      <option key={session.id} value={session.id}>
+                        {session.lessonTitle} - {session.teacherName}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {teacherOwnedActiveSession ? (
+                  <button
+                    type="button"
+                    onClick={handleEndLessonStream}
+                    disabled={lessonSessionStatus === "ending"}
+                    className="btn-secondary w-full disabled:cursor-not-allowed disabled:opacity-45"
+                  >
+                    {lessonSessionStatus === "ending" ? "Ending stream..." : "End my lesson stream"}
+                  </button>
+                ) : (
+                  <div className="space-y-2">
+                    <input
+                      value={lessonTitleDraft}
+                      onChange={event => {
+                        setLessonTitleDraft(event.target.value);
+                        setLessonSessionStatus("idle");
+                      }}
+                      placeholder="Start a stream, e.g. Sec 2 English: argumentative"
+                      className="min-h-11 w-full rounded-xl border border-slate-200 bg-white px-3 text-sm outline-none focus:border-blue-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleStartLessonStream}
+                      disabled={lessonSessionStatus === "starting" || !lessonTitleDraft.trim()}
+                      className="btn-primary w-full disabled:cursor-not-allowed disabled:opacity-45"
+                    >
+                      {lessonSessionStatus === "starting" ? "Starting stream..." : "Start lesson stream"}
+                    </button>
+                  </div>
+                )}
+              </div>
               <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-600">
-                Teachers stay in one selected lesson stream while students submit checkpoints. General and CCA posts stay in Review so the inbox stays calm.
+                Teachers start one live stream first, then students join that exact stream. General and CCA posts stay in Review so the inbox stays calm.
               </div>
             </div>
 
@@ -347,9 +428,9 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
               </div>
             ) : null}
 
-            {lessonOptions.length === 0 ? (
+            {activeLessonSessions.length === 0 ? (
               <div className="mt-5 rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-6 text-sm leading-6 text-slate-500">
-                No lesson checkpoints are coming in yet. Once students submit lesson reflections, they will appear here live.
+                No active lesson streams yet. Start one above, and students will be able to join it from the Lesson reflection option.
               </div>
             ) : (
               <div className="mt-5 grid gap-3 lg:grid-cols-2 2xl:grid-cols-3">

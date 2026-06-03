@@ -1,62 +1,69 @@
 "use client";
 
-import { doc, getDoc, onSnapshot, serverTimestamp, setDoc } from "firebase/firestore";
+import {
+  addDoc,
+  collection,
+  doc,
+  onSnapshot,
+  orderBy,
+  query,
+  serverTimestamp,
+  updateDoc,
+  where
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import type { ReflectionSession } from "@/types/reflection-session";
 
 const COLLECTION = "reflectionSessions";
+const reflectionSessionsCollection = collection(db, COLLECTION);
 
-export async function startLessonReflectionSession(userId: string, lessonTitle: string) {
-  const ref = doc(db, COLLECTION, userId);
-  await setDoc(
-    ref,
-    {
-      userId,
-      type: "lesson",
-      lessonTitle: lessonTitle.trim(),
-      active: true,
-      startedAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    },
-    { merge: true }
-  );
+export async function startLessonReflectionSession(input: {
+  userId: string;
+  teacherName: string;
+  teacherEmail: string;
+  lessonTitle: string;
+}) {
+  const docRef = await addDoc(reflectionSessionsCollection, {
+    userId: input.userId,
+    teacherName: input.teacherName,
+    teacherEmail: input.teacherEmail,
+    type: "lesson",
+    lessonTitle: input.lessonTitle.trim(),
+    active: true,
+    startedAt: serverTimestamp(),
+    updatedAt: serverTimestamp()
+  });
+
+  return docRef.id;
 }
 
-export async function endLessonReflectionSession(userId: string) {
-  const ref = doc(db, COLLECTION, userId);
-  await setDoc(
-    ref,
-    {
-      active: false,
-      updatedAt: serverTimestamp()
-    },
-    { merge: true }
-  );
+export async function endLessonReflectionSession(sessionId: string) {
+  const ref = doc(db, COLLECTION, sessionId);
+  await updateDoc(ref, {
+    active: false,
+    updatedAt: serverTimestamp()
+  });
 }
 
-export async function getLessonReflectionSession(userId: string) {
-  const ref = doc(db, COLLECTION, userId);
-  const snapshot = await getDoc(ref);
-  if (!snapshot.exists()) return null;
-  const data = snapshot.data() as ReflectionSession;
-  return data.active ? data : null;
-}
-
-export function subscribeToLessonReflectionSession(
-  userId: string,
-  onNext: (session: ReflectionSession | null) => void,
+export function subscribeToActiveLessonReflectionSessions(
+  onNext: (sessions: ReflectionSession[]) => void,
   onError: (error: Error) => void
 ) {
-  const ref = doc(db, COLLECTION, userId);
+  const q = query(
+    reflectionSessionsCollection,
+    where("active", "==", true),
+    orderBy("updatedAt", "desc")
+  );
+
   return onSnapshot(
-    ref,
+    q,
     snapshot => {
-      if (!snapshot.exists()) {
-        onNext(null);
-        return;
-      }
-      const data = snapshot.data() as ReflectionSession;
-      onNext(data.active ? data : null);
+      onNext(
+        snapshot.docs.map(docSnapshot => ({
+          id: docSnapshot.id,
+          ...docSnapshot.data()
+        })) as ReflectionSession[]
+      );
     },
     onError
   );

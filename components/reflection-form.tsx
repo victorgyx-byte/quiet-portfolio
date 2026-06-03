@@ -13,8 +13,7 @@ import {
 import { createReflectionStat } from "@/lib/reflection-stats";
 import {
   endLessonReflectionSession,
-  startLessonReflectionSession,
-  subscribeToLessonReflectionSession
+  subscribeToActiveLessonReflectionSessions
 } from "@/lib/reflection-sessions";
 import { createReflection } from "@/lib/reflections";
 import { uploadReflectionImages } from "@/lib/storage";
@@ -80,8 +79,8 @@ export function ReflectionForm() {
   const isStudio = mode === "studio";
 
   const [entryType, setEntryType] = useState<ReflectionType | null>(null);
-  const [lessonTitleDraft, setLessonTitleDraft] = useState("");
-  const [activeLessonSession, setActiveLessonSession] = useState<ReflectionSession | null>(null);
+  const [activeLessonSessions, setActiveLessonSessions] = useState<ReflectionSession[]>([]);
+  const [selectedLessonSessionId, setSelectedLessonSessionId] = useState("");
   const [step, setStep] = useState(1);
   const [momentText, setMomentText] = useState("");
   const [elaborationText, setElaborationText] = useState("");
@@ -90,20 +89,17 @@ export function ReflectionForm() {
   const [files, setFiles] = useState<SelectedImage[]>([]);
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [error, setError] = useState("");
-  const [endingLesson, setEndingLesson] = useState(false);
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const libraryInputRef = useRef<HTMLInputElement | null>(null);
   const momentTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const elaborationTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
-    if (!user) return;
-    return subscribeToLessonReflectionSession(
-      user.uid,
-      setActiveLessonSession,
+    return subscribeToActiveLessonReflectionSessions(
+      sessions => setActiveLessonSessions(sessions),
       currentError => setError(currentError.message)
     );
-  }, [user]);
+  }, []);
 
   useEffect(() => {
     return () => {
@@ -111,7 +107,22 @@ export function ReflectionForm() {
     };
   }, [files]);
 
-  const lessonTitle = activeLessonSession?.lessonTitle ?? lessonTitleDraft.trim();
+  useEffect(() => {
+    if (activeLessonSessions.length === 0) {
+      setSelectedLessonSessionId("");
+      return;
+    }
+    if (
+      !selectedLessonSessionId ||
+      !activeLessonSessions.some(session => session.id === selectedLessonSessionId)
+    ) {
+      setSelectedLessonSessionId(activeLessonSessions[0].id);
+    }
+  }, [activeLessonSessions, selectedLessonSessionId]);
+
+  const selectedLessonSession =
+    activeLessonSessions.find(session => session.id === selectedLessonSessionId) ?? null;
+  const lessonTitle = selectedLessonSession?.lessonTitle ?? "";
   const canContinueStep1 = momentText.trim().length > 0 || files.length > 0;
   const canSave = canContinueStep1;
 
@@ -122,7 +133,6 @@ export function ReflectionForm() {
 
   function resetFlow() {
     setEntryType(null);
-    setLessonTitleDraft("");
     setStep(1);
     setMomentText("");
     setElaborationText("");
@@ -135,7 +145,6 @@ export function ReflectionForm() {
 
   function prepareAnotherLessonCheckpoint() {
     setEntryType("lesson");
-    setLessonTitleDraft(lessonTitle);
     setStep(1);
     setMomentText("");
     setElaborationText("");
@@ -148,12 +157,9 @@ export function ReflectionForm() {
 
   function beginReflectionType(type: ReflectionType) {
     setEntryType(type);
-    setStep(type === "lesson" && !activeLessonSession ? 0 : 1);
+    setStep(type === "lesson" ? 0 : 1);
     setStatus("idle");
     setError("");
-    if (type !== "lesson") {
-      setLessonTitleDraft("");
-    }
   }
 
   function handleFileChange(event: ChangeEvent<HTMLInputElement>) {
@@ -230,29 +236,13 @@ export function ReflectionForm() {
     });
   }
 
-  async function handleEndLessonSession() {
-    if (!user) return;
-    setEndingLesson(true);
-    setError("");
-    try {
-      await endLessonReflectionSession(user.uid);
-      if (entryType === "lesson") {
-        resetFlow();
-      }
-    } catch {
-      setError("Could not end this lesson reflection session. Please try again.");
-    } finally {
-      setEndingLesson(false);
-    }
-  }
-
   async function handleSave(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (!user || !entryType || !canSave) return;
 
-    const normalizedLessonTitle = entryType === "lesson" ? lessonTitle.trim() : "";
-    if (entryType === "lesson" && !normalizedLessonTitle) {
-      setError("Add the lesson name before saving lesson reflections.");
+    const normalizedLessonTitle = entryType === "lesson" ? lessonTitle : "";
+    if (entryType === "lesson" && (!selectedLessonSessionId || !normalizedLessonTitle)) {
+      setError("Choose the active lesson stream before saving lesson reflections.");
       return;
     }
 
@@ -277,15 +267,12 @@ export function ReflectionForm() {
         title: buildReflectionTitle(momentText, entryType, normalizedLessonTitle),
         body: buildReflectionBody(momentText, elaborationText),
         reflectionType: entryType,
+        lessonSessionId: entryType === "lesson" ? selectedLessonSessionId : undefined,
         lessonTitle: normalizedLessonTitle || undefined,
         competencies,
         visibility: nextVisibility,
         images
       });
-
-      if (entryType === "lesson" && !activeLessonSession && normalizedLessonTitle) {
-        await startLessonReflectionSession(user.uid, normalizedLessonTitle);
-      }
 
       await createReflectionStat({
         reflectionType: entryType,
@@ -311,8 +298,8 @@ export function ReflectionForm() {
     }
   }
 
-  const totalSteps = entryType === "lesson" ? (activeLessonSession ? 3 : 4) : 4;
-  const displayStep = entryType === "lesson" ? step + (activeLessonSession ? 0 : 1) : step;
+  const totalSteps = entryType === "lesson" ? 4 : 4;
+  const displayStep = entryType === "lesson" ? step + 1 : step;
   const stepLabel = useMemo(
     () => `Step ${displayStep} of ${totalSteps}`,
     [displayStep, totalSteps]
@@ -349,28 +336,20 @@ export function ReflectionForm() {
       onSubmit={handleSave}
       className={`${isStudio ? "studio-capture-card" : "rounded-3xl border p-4 shadow-soft backdrop-blur sm:p-5"} ${stepCardClass}`}
     >
-      {activeLessonSession ? (
+      {selectedLessonSession ? (
         <div className="mb-4 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-700">
             Lesson reflection session
           </p>
-            <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
+          <div className="mt-2 flex flex-wrap items-center justify-between gap-3">
             <div>
               <p className="text-sm font-semibold text-teal-900">
-                Reflecting in: {activeLessonSession.lessonTitle}
+                Reflecting in: {selectedLessonSession.lessonTitle}
               </p>
               <p className="text-xs text-teal-700">
-                Lesson checkpoints will be shared live with teachers.
+                Started by {selectedLessonSession.teacherName}. Lesson checkpoints will be shared live with teachers.
               </p>
             </div>
-            <button
-              type="button"
-              onClick={handleEndLessonSession}
-              disabled={endingLesson}
-              className="btn-secondary w-auto rounded-full px-4 disabled:cursor-not-allowed disabled:opacity-45"
-            >
-              {endingLesson ? "Ending..." : "End lesson reflection"}
-            </button>
           </div>
         </div>
       ) : null}
@@ -452,25 +431,43 @@ export function ReflectionForm() {
             </div>
           ) : (
             <>
-              {entryType === "lesson" && !activeLessonSession && step === 0 ? (
+              {entryType === "lesson" && step === 0 ? (
                 <div className="space-y-4">
                   <div className={isStudio ? "studio-prompt-block" : ""}>
-                    <h2 className="display-title">What lesson are you reflecting in?</h2>
+                    <h2 className="display-title">Which lesson stream are you joining?</h2>
                     <p className="mt-1 text-sm leading-6 text-slate-500">
-                      Add the lesson name once. We’ll keep future checkpoints under it until you end the session.
+                      Choose the active stream your teacher has started for this checkpoint.
                     </p>
                   </div>
-                  <input
-                    value={lessonTitleDraft}
-                    onChange={event => setLessonTitleDraft(event.target.value)}
-                    placeholder="Sec 2 Math, English writing, Chemistry practical..."
-                    className={isStudio ? "studio-open-input min-h-12 w-full text-base outline-none" : "min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base outline-none focus:border-blue-500"}
-                  />
+                  {activeLessonSessions.length > 0 ? (
+                    <>
+                      <select
+                        value={selectedLessonSessionId}
+                        onChange={event => setSelectedLessonSessionId(event.target.value)}
+                        className={isStudio ? "studio-open-input min-h-12 w-full text-base outline-none" : "min-h-12 w-full rounded-2xl border border-slate-200 bg-slate-50 px-4 text-base outline-none focus:border-blue-500"}
+                      >
+                        {activeLessonSessions.map(session => (
+                          <option key={session.id} value={session.id}>
+                            {session.lessonTitle} - {session.teacherName}
+                          </option>
+                        ))}
+                      </select>
+                      {selectedLessonSession ? (
+                        <div className="rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-800">
+                          You’ll submit into {selectedLessonSession.lessonTitle}, started by {selectedLessonSession.teacherName}.
+                        </div>
+                      ) : null}
+                    </>
+                  ) : (
+                    <div className="rounded-2xl border border-dashed border-slate-300 bg-slate-50 p-4 text-sm leading-6 text-slate-500">
+                      There is no active lesson stream right now. Ask your teacher to start one, or capture this as a General reflection instead.
+                    </div>
+                  )}
                   <div className="grid gap-2 sm:grid-cols-2">
                     <button
                       type="button"
                       onClick={() => setStep(1)}
-                      disabled={!lessonTitleDraft.trim()}
+                      disabled={!selectedLessonSessionId}
                       className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
                     >
                       Continue

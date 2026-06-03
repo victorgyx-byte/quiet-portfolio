@@ -30,6 +30,7 @@ export type Reflection = {
   title: string;
   body: string;
   reflectionType?: ReflectionType;
+  lessonSessionId?: string;
   lessonTitle?: string;
   competencies?: string[];
   category?: string;
