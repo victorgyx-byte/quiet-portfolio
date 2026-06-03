@@ -58,12 +58,24 @@ export function subscribeToActiveLessonReflectionSessions(
   return onSnapshot(
     q,
     snapshot => {
-      onNext(
-        snapshot.docs.map(docSnapshot => ({
+      const sessions = snapshot.docs
+        .map(docSnapshot => ({
           id: docSnapshot.id,
           ...docSnapshot.data()
-        })) as ReflectionSession[]
-      );
+        }))
+        .map(session => session as Partial<ReflectionSession> & { id: string })
+        .filter(
+          session =>
+            session.type === "lesson" &&
+            typeof session.lessonTitle === "string" &&
+            session.lessonTitle.trim().length > 0 &&
+            typeof session.teacherName === "string" &&
+            session.teacherName.trim().length > 0 &&
+            typeof session.teacherEmail === "string" &&
+            session.teacherEmail.trim().length > 0
+        ) as ReflectionSession[];
+
+      onNext(sessions);
     },
     onError
   );

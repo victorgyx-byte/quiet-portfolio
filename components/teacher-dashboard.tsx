@@ -124,6 +124,10 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
 
   const teacherOwnedActiveSession =
     activeLessonSessions.find(session => session.userId === user?.uid) ?? null;
+  const selectedTeacherOwnedSession =
+    activeLessonSessions.find(
+      session => session.id === selectedLessonSessionId && session.userId === user?.uid
+    ) ?? null;
 
   useEffect(() => {
     if (activeLessonSessions.length === 0) {
@@ -305,11 +309,12 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
   }
 
   async function handleEndLessonStream() {
-    if (!teacherOwnedActiveSession) return;
+    const sessionToEnd = selectedTeacherOwnedSession ?? teacherOwnedActiveSession;
+    if (!sessionToEnd) return;
     setLessonSessionStatus("ending");
     setError("");
     try {
-      await endLessonReflectionSession(teacherOwnedActiveSession.id);
+      await endLessonReflectionSession(sessionToEnd.id);
       setLessonSessionStatus("idle");
     } catch {
       setLessonSessionStatus("error");
@@ -386,7 +391,7 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
                   </select>
                 </label>
 
-                {teacherOwnedActiveSession ? (
+                {selectedTeacherOwnedSession || teacherOwnedActiveSession ? (
                   <button
                     type="button"
                     onClick={handleEndLessonStream}

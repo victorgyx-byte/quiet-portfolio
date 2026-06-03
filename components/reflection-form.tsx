@@ -12,7 +12,6 @@ import {
 } from "@/lib/reflection-utils";
 import { createReflectionStat } from "@/lib/reflection-stats";
 import {
-  endLessonReflectionSession,
   subscribeToActiveLessonReflectionSessions
 } from "@/lib/reflection-sessions";
 import { createReflection } from "@/lib/reflections";
@@ -126,6 +125,12 @@ export function ReflectionForm() {
   const canContinueStep1 = momentText.trim().length > 0 || files.length > 0;
   const canSave = canContinueStep1;
 
+  useEffect(() => {
+    if (entryType === "lesson" && step > 0 && !selectedLessonSession) {
+      setStep(0);
+    }
+  }, [entryType, selectedLessonSession, step]);
+
   function replaceFiles(next: SelectedImage[]) {
     files.forEach(image => URL.revokeObjectURL(image.previewUrl));
     setFiles(next);
@@ -145,7 +150,7 @@ export function ReflectionForm() {
 
   function prepareAnotherLessonCheckpoint() {
     setEntryType("lesson");
-    setStep(1);
+    setStep(selectedLessonSession ? 1 : 0);
     setMomentText("");
     setElaborationText("");
     setCompetencies([]);
@@ -336,7 +341,7 @@ export function ReflectionForm() {
       onSubmit={handleSave}
       className={`${isStudio ? "studio-capture-card" : "rounded-3xl border p-4 shadow-soft backdrop-blur sm:p-5"} ${stepCardClass}`}
     >
-      {selectedLessonSession ? (
+      {entryType === "lesson" && selectedLessonSession ? (
         <div className="mb-4 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3">
           <p className="text-xs font-semibold uppercase tracking-[0.14em] text-teal-700">
             Lesson reflection session
