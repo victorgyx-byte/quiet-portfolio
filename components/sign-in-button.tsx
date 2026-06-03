@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/auth-provider";
+import { isTeacherEmail, useAuth } from "@/components/auth-provider";
 
 export function SignInButton({ compact = false }: { compact?: boolean }) {
   const { signInWithGoogle } = useAuth();
@@ -12,8 +12,8 @@ export function SignInButton({ compact = false }: { compact?: boolean }) {
   async function handleSignIn() {
     setIsSigningIn(true);
     try {
-      await signInWithGoogle();
-      router.push("/dashboard");
+      const credential = await signInWithGoogle();
+      router.push(isTeacherEmail(credential.user.email) ? "/teacher" : "/dashboard");
     } finally {
       setIsSigningIn(false);
     }

@@ -4,6 +4,7 @@ import {
   User,
   onAuthStateChanged,
   signInWithPopup,
+  type UserCredential,
   signOut as firebaseSignOut
 } from "firebase/auth";
 import {
@@ -20,17 +21,22 @@ type AuthContextValue = {
   user: User | null;
   loading: boolean;
   isTeacher: boolean;
-  signInWithGoogle: () => Promise<void>;
+  signInWithGoogle: () => Promise<UserCredential>;
   signOut: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function getTeacherEmails() {
+export function getTeacherEmails() {
   return (process.env.NEXT_PUBLIC_TEACHER_EMAILS ?? "")
     .split(",")
     .map(email => email.trim().toLowerCase())
     .filter(Boolean);
+}
+
+export function isTeacherEmail(email?: string | null) {
+  if (!email) return false;
+  return getTeacherEmails().includes(email.toLowerCase());
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -45,7 +51,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    await signInWithPopup(auth, googleProvider);
+    return signInWithPopup(auth, googleProvider);
   }, []);
 
   const signOut = useCallback(async () => {
@@ -53,8 +59,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const isTeacher = useMemo(() => {
-    if (!user?.email) return false;
-    return getTeacherEmails().includes(user.email.toLowerCase());
+    return isTeacherEmail(user?.email);
   }, [user?.email]);
 
   const value = useMemo(

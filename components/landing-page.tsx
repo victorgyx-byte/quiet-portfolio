@@ -32,14 +32,14 @@ const sampleMoments = [
 ];
 
 export function LandingPage() {
-  const { user, loading } = useAuth();
+  const { user, loading, isTeacher } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     if (!loading && user) {
-      router.replace("/dashboard");
+      router.replace(isTeacher ? "/teacher" : "/dashboard");
     }
-  }, [loading, router, user]);
+  }, [isTeacher, loading, router, user]);
 
   return (
     <main className="landing-studio min-h-screen overflow-hidden">
@@ -60,10 +60,10 @@ export function LandingPage() {
               <div className="h-12 w-44 animate-pulse rounded-full bg-[#f0d8c7]" />
             ) : user ? (
               <Link
-                href="/dashboard"
+                href={isTeacher ? "/teacher" : "/dashboard"}
                 className="home-primary inline-flex min-h-12 items-center justify-center rounded-full px-5 py-3 text-sm font-bold text-white shadow-soft transition hover:-translate-y-0.5"
               >
-                Open dashboard
+                {isTeacher ? "Open teacher view" : "Open dashboard"}
               </Link>
             ) : (
               <SignInButton />
