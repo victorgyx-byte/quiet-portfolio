@@ -55,127 +55,6 @@ function getStatReflectionType(stat: ReflectionStat) {
   return "general" as const;
 }
 
-function getPreviewText(reflection: Reflection) {
-  const compact = reflection.body.replace(/\s+/g, " ").trim();
-  if (compact.length <= 140) return compact;
-  return `${compact.slice(0, 140)}...`;
-}
-
-function ReflectionDetailPanel({
-  reflection,
-  feedbackText,
-  feedbackStatus,
-  onFeedbackChange,
-  onSendFeedback
-}: {
-  reflection: Reflection | null;
-  feedbackText: string;
-  feedbackStatus: "idle" | "saving" | "error";
-  onFeedbackChange: (value: string) => void;
-  onSendFeedback: (reflection: Reflection) => void;
-}) {
-  if (!reflection) {
-    return (
-      <div className="rounded-3xl border border-dashed border-slate-300 bg-white p-6 text-sm leading-6 text-slate-500">
-        Select a reflection to read it in full and leave feedback.
-      </div>
-    );
-  }
-
-  return (
-    <div className="rounded-3xl border border-slate-200 bg-white p-5 shadow-soft">
-      <div className="flex flex-wrap items-center gap-2">
-        <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-          {getReflectionCompetencyLabel(reflection)}
-        </span>
-        <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
-          {getReflectionTypeLabel(getReflectionType(reflection))}
-        </span>
-        {getReflectionType(reflection) === "lesson" && getReflectionLessonTitle(reflection) ? (
-          <span className="rounded-full bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-            Lesson: {getReflectionLessonTitle(reflection)}
-          </span>
-        ) : null}
-        <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-500">
-          {formatDate(reflection)} at {formatTime(reflection)}
-        </span>
-      </div>
-
-      <div className="mt-4">
-        <p className="text-sm font-semibold text-slate-900">
-          {reflection.studentName || "Student"}
-        </p>
-        <p className="text-xs text-slate-500">{reflection.studentEmail}</p>
-      </div>
-
-      <h3 className="mt-4 text-2xl font-bold text-slate-900">{reflection.title}</h3>
-      <p className="mt-3 whitespace-pre-line text-sm leading-7 text-slate-700">
-        {reflection.body}
-      </p>
-
-      {reflection.images?.length ? (
-        <div className="mt-4 grid grid-cols-2 gap-2">
-          {reflection.images.map(image => (
-            <a key={image.path} href={image.url} target="_blank" rel="noreferrer">
-              <img
-                src={image.url}
-                alt="Shared reflection upload"
-                className="h-36 w-full rounded-2xl object-cover"
-                loading="lazy"
-              />
-            </a>
-          ))}
-        </div>
-      ) : null}
-
-      {(reflection.teacherFeedbackNotes ?? []).length > 0 ? (
-        <div className="mt-5 space-y-2">
-          <p className="text-sm font-semibold text-slate-800">Feedback history</p>
-          {[...(reflection.teacherFeedbackNotes ?? [])]
-            .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
-            .map((note, index) => (
-              <div
-                key={`${note.createdAt}-${index}`}
-                className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3"
-              >
-                <p className="text-sm leading-6 text-slate-700">{note.text}</p>
-                <p className="mt-1 text-xs text-slate-400">
-                  {note.teacherName} / {formatFeedbackDate(note)}
-                </p>
-              </div>
-            ))}
-        </div>
-      ) : null}
-
-      <div className="mt-5 space-y-3">
-        <label className="block">
-          <span className="text-sm font-semibold text-slate-700">Leave feedback</span>
-          <textarea
-            value={feedbackText}
-            onChange={event => onFeedbackChange(event.target.value)}
-            rows={4}
-            placeholder="A short note, question, or next step..."
-            className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm leading-6 outline-none focus:border-blue-500"
-          />
-        </label>
-        <button
-          type="button"
-          onClick={() => onSendFeedback(reflection)}
-          disabled={!feedbackText.trim() || feedbackStatus === "saving"}
-          className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
-        >
-          {feedbackStatus === "saving" ? "Saving feedback..." : "Send feedback"}
-        </button>
-        {feedbackStatus === "error" ? (
-          <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
-            Could not save feedback. Please try again.
-          </p>
-        ) : null}
-      </div>
-    </div>
-  );
-}
-
 export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTab }) {
   const { user } = useAuth();
   const [reflections, setReflections] = useState<Reflection[]>([]);
@@ -271,9 +150,6 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
     setFeedbackText("");
     setFeedbackStatus("idle");
   }, [selectedLiveId, expandedId, activeTab]);
-
-  const selectedLiveReflection =
-    liveReflections.find(reflection => reflection.id === selectedLiveId) ?? null;
 
   const students = useMemo(() => {
     const map = new Map<string, { key: string; name: string; email: string; count: number }>();
@@ -476,20 +352,24 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
                 No lesson checkpoints are coming in yet. Once students submit lesson reflections, they will appear here live.
               </div>
             ) : (
-              <div className="mt-5 grid gap-4 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.25fr)]">
-                <div className="space-y-3">
-                  {liveReflections.map(reflection => {
-                    const isSelected = selectedLiveId === reflection.id;
-                    return (
+              <div className="mt-5 space-y-3">
+                {liveReflections.map(reflection => {
+                  const isSelected = selectedLiveId === reflection.id;
+                  return (
+                    <article
+                      key={reflection.id}
+                      className={`overflow-hidden rounded-3xl border transition ${
+                        isSelected
+                          ? "border-slate-900 bg-slate-900 text-white shadow-soft"
+                          : "border-slate-200 bg-white"
+                      }`}
+                    >
                       <button
-                        key={reflection.id}
                         type="button"
-                        onClick={() => setSelectedLiveId(reflection.id)}
-                        className={`w-full rounded-3xl border p-4 text-left transition ${
-                          isSelected
-                            ? "border-slate-900 bg-slate-900 text-white shadow-soft"
-                            : "border-slate-200 bg-white hover:border-slate-300"
-                        }`}
+                        onClick={() =>
+                          setSelectedLiveId(current => (current === reflection.id ? null : reflection.id))
+                        }
+                        className="w-full p-4 text-left"
                       >
                         <div className="flex items-start justify-between gap-3">
                           <div>
@@ -500,23 +380,25 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
                               {formatDate(reflection)} at {formatTime(reflection)}
                             </p>
                           </div>
-                          <div className="flex shrink-0 items-center gap-2">
-                            {reflection.images?.length ? (
-                              <span
-                                className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
-                                  isSelected ? "bg-white/15 text-white" : "bg-slate-100 text-slate-600"
-                                }`}
-                              >
-                                {reflection.images.length} photo{reflection.images.length > 1 ? "s" : ""}
-                              </span>
-                            ) : null}
-                          </div>
+                          {reflection.images?.length ? (
+                            <span
+                              className={`rounded-full px-2.5 py-1 text-xs font-semibold ${
+                                isSelected ? "bg-white/15 text-white" : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              {reflection.images.length} photo{reflection.images.length > 1 ? "s" : ""}
+                            </span>
+                          ) : null}
                         </div>
                         <p className={`mt-3 text-sm font-semibold ${isSelected ? "text-white" : "text-slate-800"}`}>
                           {reflection.title}
                         </p>
-                        <p className={`mt-2 line-clamp-3 text-sm leading-6 ${isSelected ? "text-slate-100" : "text-slate-600"}`}>
-                          {getPreviewText(reflection)}
+                        <p
+                          className={`mt-2 whitespace-pre-line text-sm leading-6 ${
+                            isSelected ? "text-slate-100" : "text-slate-600"
+                          }`}
+                        >
+                          {reflection.body}
                         </p>
                         <div className="mt-3 flex flex-wrap items-center gap-2">
                           <span
@@ -528,17 +410,73 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
                           </span>
                         </div>
                       </button>
-                    );
-                  })}
-                </div>
 
-                <ReflectionDetailPanel
-                  reflection={selectedLiveReflection}
-                  feedbackText={feedbackText}
-                  feedbackStatus={feedbackStatus}
-                  onFeedbackChange={setFeedbackText}
-                  onSendFeedback={handleFeedback}
-                />
+                      {isSelected ? (
+                        <div className="space-y-4 border-t border-white/10 bg-white px-4 py-4 text-slate-700">
+                          {reflection.images?.length ? (
+                            <div className="grid grid-cols-2 gap-2">
+                              {reflection.images.map(image => (
+                                <a key={image.path} href={image.url} target="_blank" rel="noreferrer">
+                                  <img
+                                    src={image.url}
+                                    alt="Shared reflection upload"
+                                    className="h-36 w-full rounded-2xl object-cover"
+                                    loading="lazy"
+                                  />
+                                </a>
+                              ))}
+                            </div>
+                          ) : null}
+
+                          {(reflection.teacherFeedbackNotes ?? []).length > 0 ? (
+                            <div className="space-y-2">
+                              <p className="text-sm font-semibold text-slate-800">Feedback history</p>
+                              {[...(reflection.teacherFeedbackNotes ?? [])]
+                                .sort((a, b) => b.createdAt.localeCompare(a.createdAt))
+                                .map((note, index) => (
+                                  <div
+                                    key={`${note.createdAt}-${index}`}
+                                    className="rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3"
+                                  >
+                                    <p className="text-sm leading-6 text-slate-700">{note.text}</p>
+                                    <p className="mt-1 text-xs text-slate-400">
+                                      {note.teacherName} / {formatFeedbackDate(note)}
+                                    </p>
+                                  </div>
+                                ))}
+                            </div>
+                          ) : null}
+
+                          <div className="space-y-3">
+                            <label className="block">
+                              <span className="text-sm font-semibold text-slate-700">Leave feedback</span>
+                              <textarea
+                                value={feedbackText}
+                                onChange={event => setFeedbackText(event.target.value)}
+                                rows={4}
+                                placeholder="A short note, question, or next step..."
+                                className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm leading-6 outline-none focus:border-blue-500"
+                              />
+                            </label>
+                            <button
+                              type="button"
+                              onClick={() => handleFeedback(reflection)}
+                              disabled={!feedbackText.trim() || feedbackStatus === "saving"}
+                              className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
+                            >
+                              {feedbackStatus === "saving" ? "Saving feedback..." : "Send feedback"}
+                            </button>
+                            {feedbackStatus === "error" ? (
+                              <p className="rounded-xl bg-rose-50 px-3 py-2 text-sm font-semibold text-rose-700">
+                                Could not save feedback. Please try again.
+                              </p>
+                            ) : null}
+                          </div>
+                        </div>
+                      ) : null}
+                    </article>
+                  );
+                })}
               </div>
             )}
           </section>
