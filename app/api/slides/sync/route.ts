@@ -46,6 +46,32 @@ function safeId(prefix: string, raw: string) {
   return candidate.length >= 5 ? candidate : `${prefix}_item`;
 }
 
+function uniqueSlideKey(reflectionId: string) {
+  return `${Date.now().toString(36)}_${Math.random().toString(36).slice(2, 8)}_${reflectionId}`;
+}
+
+async function readGoogleError(response: Response) {
+  try {
+    return await response.text();
+  } catch {
+    return "";
+  }
+}
+
+function imageUrlForSlides(rawUrl: string, requestOrigin: string) {
+  try {
+    const origin = new URL(requestOrigin);
+    if (origin.hostname === "localhost" || origin.hostname === "127.0.0.1") {
+      return rawUrl;
+    }
+    const proxyUrl = new URL("/api/image-proxy", origin);
+    proxyUrl.searchParams.set("url", rawUrl);
+    return proxyUrl.toString();
+  } catch {
+    return rawUrl;
+  }
+}
+
 async function googleRequest(url: string, token: string, init?: RequestInit) {
   return fetch(url, {
     ...init,
@@ -358,15 +384,17 @@ async function addNarrativeSlide(
 async function appendReflectionSlide(
   token: string,
   deckId: string,
-  reflection: SlidesExportPayload["reflections"][number]
+  reflection: SlidesExportPayload["reflections"][number],
+  requestOrigin: string
 ) {
-  const slideId = safeId("slide", reflection.reflectionId);
-  const titleShapeId = safeId("title", reflection.reflectionId);
-  const bodyShapeId = safeId("body", reflection.reflectionId);
-  const metaShapeId = safeId("meta", reflection.reflectionId);
-  const momentShapeId = safeId("moment", reflection.reflectionId);
-  const meaningShapeId = safeId("meaning", reflection.reflectionId);
-  const accentShapeId = safeId("accent", reflection.reflectionId);
+  const slideKey = uniqueSlideKey(reflection.reflectionId);
+  const slideId = safeId("slide", slideKey);
+  const titleShapeId = safeId("title", slideKey);
+  const bodyShapeId = safeId("body", slideKey);
+  const metaShapeId = safeId("meta", slideKey);
+  const momentShapeId = safeId("moment", slideKey);
+  const meaningShapeId = safeId("meaning", slideKey);
+  const accentShapeId = safeId("accent", slideKey);
 
   const { moment, meaning } = splitMomentBody(reflection.body);
   const competencyLabel =
@@ -410,6 +438,7 @@ async function appendReflectionSlide(
   ];
 
   const images = (reflection.images ?? []).slice(0, 5);
+  const imageRequests: Record<string, unknown>[] = [];
   if (images.length > 0) {
     const slotsByCount: Array<{ x: number; y: number; w: number; h: number }> =
       images.length === 1
@@ -443,10 +472,10 @@ async function appendReflectionSlide(
     images.forEach((image, index) => {
       const slot = slotsByCount[index];
       if (!slot?.w || !slot?.h) return;
-      requests.push({
+      imageRequests.push({
         createImage: {
-          objectId: safeId(`img${index}`, reflection.reflectionId),
-          url: image.url,
+          objectId: safeId(`img${index}`, slideKey),
+          url: imageUrlForSlides(image.url, requestOrigin),
           elementProperties: {
             pageObjectId: slideId,
             size: {
@@ -476,7 +505,23 @@ async function appendReflectionSlide(
   );
 
   if (!batchResponse.ok) {
+    console.error("Google Slides reflection text batch failed", await readGoogleError(batchResponse));
     throw new Error("We couldn't add one of your reflections to Slides. Please try again.");
+  }
+
+  if (imageRequests.length > 0) {
+    const imageResponse = await googleRequest(
+      `${GOOGLE_SLIDES_PRESENTATIONS}/${deckId}:batchUpdate`,
+      token,
+      {
+        method: "POST",
+        body: JSON.stringify({ requests: imageRequests })
+      }
+    );
+
+    if (!imageResponse.ok) {
+      console.error("Google Slides image batch failed", await readGoogleError(imageResponse));
+    }
   }
 
   const mapEntry: SlidesReflectionMapEntry = {
@@ -532,7 +577,12 @@ export async function POST(request: NextRequest) {
     let addedSlides = 0;
     for (const reflection of payload.reflections) {
       if (reflectionSlideMap[reflection.reflectionId]) continue;
-      const mapEntry = await appendReflectionSlide(token, deckId, reflection);
+      const mapEntry = await appendReflectionSlide(
+        token,
+        deckId,
+        reflection,
+        request.nextUrl.origin
+      );
       reflectionSlideMap[reflection.reflectionId] = mapEntry;
       addedSlides += 1;
     }
