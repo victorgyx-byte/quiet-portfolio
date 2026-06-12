@@ -272,11 +272,15 @@ export function ReflectionForm() {
         title: buildReflectionTitle(momentText, entryType, normalizedLessonTitle),
         body: buildReflectionBody(momentText, elaborationText),
         reflectionType: entryType,
-        lessonSessionId: entryType === "lesson" ? selectedLessonSessionId : undefined,
-        lessonTitle: normalizedLessonTitle || undefined,
         competencies,
         visibility: nextVisibility,
-        images
+        images,
+        ...(entryType === "lesson"
+          ? {
+              lessonSessionId: selectedLessonSessionId,
+              lessonTitle: normalizedLessonTitle
+            }
+          : {})
       });
 
       await createReflectionStat({
