@@ -368,7 +368,7 @@ export function ReflectionForm() {
       ) : null}
 
       {!entryType ? (
-        <div className="space-y-4">
+        <div className="mx-auto max-w-2xl space-y-4 text-center">
           <div className="mb-4 flex items-center justify-between">
             <p className={isStudio ? "studio-kicker" : "text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"}>
               Start reflection
@@ -381,15 +381,19 @@ export function ReflectionForm() {
             </p>
           </div>
 
-          <div className="grid gap-2">
+          <div className="mx-auto grid max-w-xl gap-2">
             {REFLECTION_TYPE_OPTIONS.map(option => (
               <button
                 key={option.id}
                 type="button"
                 onClick={() => beginReflectionType(option.id)}
-                className={isStudio ? "studio-choice-row" : "flex items-start gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 text-left"}
+                className={
+                  isStudio
+                    ? "studio-choice-row justify-center text-center"
+                    : "flex items-center justify-center rounded-2xl border border-slate-200 bg-white px-4 py-4 text-center"
+                }
               >
-                <span>
+                <span className="block">
                   <span className="block text-sm font-semibold text-slate-800">{option.label}</span>
                   <span className="block text-xs text-slate-500">
                     {option.id === "general"
