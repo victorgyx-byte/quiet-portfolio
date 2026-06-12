@@ -72,6 +72,12 @@ function imageUrlForSlides(rawUrl: string, requestOrigin: string) {
   }
 }
 
+function safeText(text: string, fallback = " ") {
+  const normalized = text.replace(/\r\n/g, "\n").replace(/\r/g, "\n").trim();
+  if (!normalized) return fallback;
+  return normalized.length > 2400 ? `${normalized.slice(0, 2397)}...` : normalized;
+}
+
 async function googleRequest(url: string, token: string, init?: RequestInit) {
   return fetch(url, {
     ...init,
@@ -192,12 +198,13 @@ function insertStyledText(
     bold?: boolean;
   }
 ) {
+  const preparedText = safeText(text);
   return [
     {
       insertText: {
         objectId,
         insertionIndex: 0,
-        text
+        text: preparedText
       }
     },
     {
@@ -506,7 +513,49 @@ async function appendReflectionSlide(
 
   if (!batchResponse.ok) {
     console.error("Google Slides reflection text batch failed", await readGoogleError(batchResponse));
-    throw new Error("We couldn't add one of your reflections to Slides. Please try again.");
+    const fallbackKey = uniqueSlideKey(`fallback_${reflection.reflectionId}`);
+    const fallbackSlideId = safeId("fallback_slide", fallbackKey);
+    const fallbackTitleId = safeId("fallback_title", fallbackKey);
+    const fallbackBodyId = safeId("fallback_body", fallbackKey);
+    const fallbackRequests: Record<string, unknown>[] = [
+      createBlankSlide(fallbackSlideId),
+      setSlideBackground(fallbackSlideId),
+      box(fallbackSlideId, fallbackTitleId, 0.65, 0.65, 8.0, 0.8),
+      ...insertStyledText(fallbackTitleId, reflection.title || "Reflection", {
+        size: 24,
+        color: "ink",
+        bold: true
+      }),
+      box(fallbackSlideId, fallbackBodyId, 0.65, 1.65, 8.0, 3.0),
+      ...insertStyledText(
+        fallbackBodyId,
+        `${metaText}\n\n${reflection.body || "Reflection saved without text."}`,
+        {
+          size: 14,
+          color: "muted"
+        }
+      )
+    ];
+    const fallbackResponse = await googleRequest(
+      `${GOOGLE_SLIDES_PRESENTATIONS}/${deckId}:batchUpdate`,
+      token,
+      {
+        method: "POST",
+        body: JSON.stringify({ requests: fallbackRequests })
+      }
+    );
+    if (!fallbackResponse.ok) {
+      console.error(
+        "Google Slides fallback reflection batch failed",
+        await readGoogleError(fallbackResponse)
+      );
+      throw new Error("We couldn't add one of your reflections to Slides. Please try again.");
+    }
+    return {
+      slideId: fallbackSlideId,
+      titleShapeId: fallbackTitleId,
+      bodyShapeId: fallbackBodyId
+    };
   }
 
   if (imageRequests.length > 0) {
