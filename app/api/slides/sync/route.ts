@@ -394,6 +394,10 @@ async function appendReflectionSlide(
   reflection: SlidesExportPayload["reflections"][number],
   requestOrigin: string
 ) {
+  if (reflection.reflectionType === "lesson") {
+    return appendLessonReflectionSlide(token, deckId, reflection);
+  }
+
   const slideKey = uniqueSlideKey(reflection.reflectionId);
   const slideId = safeId("slide", slideKey);
   const titleShapeId = safeId("title", slideKey);
@@ -580,6 +584,72 @@ async function appendReflectionSlide(
   };
 
   return mapEntry;
+}
+
+async function appendLessonReflectionSlide(
+  token: string,
+  deckId: string,
+  reflection: SlidesExportPayload["reflections"][number]
+) {
+  const slideKey = uniqueSlideKey(`lesson_${reflection.reflectionId}`);
+  const slideId = safeId("lesson_slide", slideKey);
+  const titleShapeId = safeId("lesson_title", slideKey);
+  const bodyShapeId = safeId("lesson_body", slideKey);
+  const metaShapeId = safeId("lesson_meta", slideKey);
+  const lessonShapeId = safeId("lesson_name", slideKey);
+  const accentShapeId = safeId("lesson_accent", slideKey);
+  const competencyLabel =
+    reflection.competencies.length > 0 ? reflection.competencies.join(", ") : "No 21CC tag";
+  const lessonTitle = reflection.lessonTitle || "Lesson reflection";
+  const metaText = `${competencyLabel} | Lesson | ${formatDateLabel(reflection.createdAt)}`;
+  const requests: Record<string, unknown>[] = [
+    createBlankSlide(slideId),
+    setSlideBackground(slideId),
+    ...roundedRect(slideId, accentShapeId, 0.42, 0.42, 8.25, 0.32, "peach"),
+    box(slideId, lessonShapeId, 0.65, 0.8, 8.0, 0.42),
+    ...insertStyledText(lessonShapeId, lessonTitle, {
+      size: 13,
+      color: "clay",
+      bold: true
+    }),
+    box(slideId, titleShapeId, 0.65, 1.32, 8.0, 0.85),
+    ...insertStyledText(titleShapeId, reflection.title || "Lesson checkpoint", {
+      size: 26,
+      color: "ink",
+      bold: true
+    }),
+    box(slideId, metaShapeId, 0.65, 2.2, 8.0, 0.3),
+    ...insertStyledText(metaShapeId, metaText, {
+      size: 10,
+      color: "muted",
+      bold: true
+    }),
+    box(slideId, bodyShapeId, 0.65, 2.72, 8.0, 2.0),
+    ...insertStyledText(bodyShapeId, reflection.body || "Reflection saved without text.", {
+      size: 15,
+      color: "muted"
+    })
+  ];
+
+  const response = await googleRequest(
+    `${GOOGLE_SLIDES_PRESENTATIONS}/${deckId}:batchUpdate`,
+    token,
+    {
+      method: "POST",
+      body: JSON.stringify({ requests })
+    }
+  );
+
+  if (!response.ok) {
+    console.error("Google Slides lesson reflection batch failed", await readGoogleError(response));
+    throw new Error("We couldn't add one of your lesson reflections to Slides. Please try again.");
+  }
+
+  return {
+    slideId,
+    titleShapeId,
+    bodyShapeId
+  };
 }
 
 export async function POST(request: NextRequest) {
