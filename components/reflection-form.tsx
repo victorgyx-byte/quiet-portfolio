@@ -301,9 +301,13 @@ export function ReflectionForm() {
       );
 
       setStatus("saved");
-    } catch {
+    } catch (currentError) {
       setStatus("error");
-      setError("Could not save this moment. Please try again.");
+      setError(
+        currentError instanceof Error
+          ? currentError.message
+          : "Could not save this moment. Please try again."
+      );
     }
   }
 
