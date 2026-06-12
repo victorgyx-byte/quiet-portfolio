@@ -2,6 +2,7 @@
 
 import {
   addDoc,
+  arrayUnion,
   collection,
   doc,
   onSnapshot,
@@ -12,7 +13,7 @@ import {
   where
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
-import type { ReflectionSession } from "@/types/reflection-session";
+import type { LessonCheckpoint, ReflectionSession } from "@/types/reflection-session";
 
 const COLLECTION = "reflectionSessions";
 const reflectionSessionsCollection = collection(db, COLLECTION);
@@ -41,6 +42,62 @@ export async function endLessonReflectionSession(sessionId: string) {
   const ref = doc(db, COLLECTION, sessionId);
   await updateDoc(ref, {
     active: false,
+    activeCheckpointId: "",
+    updatedAt: serverTimestamp()
+  });
+}
+
+function createCheckpointId() {
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return crypto.randomUUID();
+  }
+  return `checkpoint-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+export function getActiveLessonCheckpoint(session?: ReflectionSession | null) {
+  if (!session?.activeCheckpointId) return null;
+  return (
+    session.checkpoints?.find(checkpoint => checkpoint.id === session.activeCheckpointId) ?? null
+  );
+}
+
+export function getLessonCheckpoints(session?: ReflectionSession | null) {
+  return [...(session?.checkpoints ?? [])].sort((a, b) =>
+    a.createdAt.localeCompare(b.createdAt)
+  );
+}
+
+export async function createLessonCheckpoint(
+  sessionId: string,
+  input: { prompt: string; helperText?: string }
+) {
+  const checkpoint: LessonCheckpoint = {
+    id: createCheckpointId(),
+    prompt: input.prompt.trim(),
+    helperText: input.helperText?.trim() || "",
+    createdAt: new Date().toISOString()
+  };
+  const ref = doc(db, COLLECTION, sessionId);
+  await updateDoc(ref, {
+    checkpoints: arrayUnion(checkpoint),
+    activeCheckpointId: checkpoint.id,
+    updatedAt: serverTimestamp()
+  });
+  return checkpoint.id;
+}
+
+export async function setActiveLessonCheckpoint(sessionId: string, checkpointId: string) {
+  const ref = doc(db, COLLECTION, sessionId);
+  await updateDoc(ref, {
+    activeCheckpointId: checkpointId,
+    updatedAt: serverTimestamp()
+  });
+}
+
+export async function closeActiveLessonCheckpoint(sessionId: string) {
+  const ref = doc(db, COLLECTION, sessionId);
+  await updateDoc(ref, {
+    activeCheckpointId: "",
     updatedAt: serverTimestamp()
   });
 }

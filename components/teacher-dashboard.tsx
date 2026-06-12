@@ -4,7 +4,12 @@ import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { createStudentNotification } from "@/lib/notifications";
 import {
+  closeActiveLessonCheckpoint,
+  createLessonCheckpoint,
   endLessonReflectionSession,
+  getActiveLessonCheckpoint,
+  getLessonCheckpoints,
+  setActiveLessonCheckpoint,
   startLessonReflectionSession,
   subscribeToActiveLessonReflectionSessions
 } from "@/lib/reflection-sessions";
@@ -77,6 +82,11 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
   >("idle");
   const [selectedLessonSessionId, setSelectedLessonSessionId] = useState("");
   const [selectedLiveId, setSelectedLiveId] = useState<string | null>(null);
+  const [checkpointPromptDraft, setCheckpointPromptDraft] = useState("");
+  const [checkpointHelperDraft, setCheckpointHelperDraft] = useState("");
+  const [checkpointStatus, setCheckpointStatus] = useState<
+    "idle" | "opening" | "closing" | "reopening" | "error"
+  >("idle");
   const [feedbackText, setFeedbackText] = useState("");
   const [feedbackStatus, setFeedbackStatus] = useState<"idle" | "saving" | "error">("idle");
   const [notificationTitle, setNotificationTitle] = useState("A gentle reflection reminder");
@@ -144,6 +154,8 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
 
   const selectedLessonSession =
     activeLessonSessions.find(session => session.id === selectedLessonSessionId) ?? null;
+  const activeLessonCheckpoint = getActiveLessonCheckpoint(selectedLessonSession);
+  const selectedLessonCheckpoints = getLessonCheckpoints(selectedLessonSession);
 
   const liveReflections = useMemo(
     () =>
@@ -308,6 +320,53 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
     }
   }
 
+  async function handleOpenCheckpoint() {
+    const sessionToUpdate = selectedTeacherOwnedSession ?? teacherOwnedActiveSession;
+    if (!sessionToUpdate || !checkpointPromptDraft.trim()) return;
+    setCheckpointStatus("opening");
+    setError("");
+    try {
+      await createLessonCheckpoint(sessionToUpdate.id, {
+        prompt: checkpointPromptDraft,
+        helperText: checkpointHelperDraft
+      });
+      setCheckpointPromptDraft("");
+      setCheckpointHelperDraft("");
+      setCheckpointStatus("idle");
+    } catch {
+      setCheckpointStatus("error");
+      setError("Could not open the checkpoint prompt. Please try again.");
+    }
+  }
+
+  async function handleCloseCheckpoint() {
+    const sessionToUpdate = selectedTeacherOwnedSession ?? teacherOwnedActiveSession;
+    if (!sessionToUpdate || !activeLessonCheckpoint) return;
+    setCheckpointStatus("closing");
+    setError("");
+    try {
+      await closeActiveLessonCheckpoint(sessionToUpdate.id);
+      setCheckpointStatus("idle");
+    } catch {
+      setCheckpointStatus("error");
+      setError("Could not close the checkpoint prompt. Please try again.");
+    }
+  }
+
+  async function handleReopenCheckpoint(checkpointId: string) {
+    const sessionToUpdate = selectedTeacherOwnedSession ?? teacherOwnedActiveSession;
+    if (!sessionToUpdate) return;
+    setCheckpointStatus("reopening");
+    setError("");
+    try {
+      await setActiveLessonCheckpoint(sessionToUpdate.id, checkpointId);
+      setCheckpointStatus("idle");
+    } catch {
+      setCheckpointStatus("error");
+      setError("Could not reopen that checkpoint. Please try again.");
+    }
+  }
+
   async function handleEndLessonStream() {
     const sessionToEnd = selectedTeacherOwnedSession ?? teacherOwnedActiveSession;
     if (!sessionToEnd) return;
@@ -360,7 +419,7 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
               </p>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
-              <p className="text-xs font-semibold text-slate-500">Checkpoints in stream</p>
+              <p className="text-xs font-semibold text-slate-500">Responses in stream</p>
               <p className="mt-2 text-3xl font-bold text-slate-900">{liveReflections.length}</p>
             </div>
             <div className="rounded-3xl border border-slate-200 bg-white p-4 shadow-soft">
@@ -423,9 +482,120 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
                 )}
               </div>
               <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm leading-6 text-slate-600">
-                Teachers start one live stream first, then students join that exact stream. General and CCA posts stay in Review so the inbox stays calm.
+                Teachers start one live stream first, then open checkpoint prompts during the lesson. Students join the stream and respond to the current prompt.
               </div>
             </div>
+
+            {selectedLessonSession ? (
+              <div className="mt-5 rounded-3xl border border-slate-200 bg-white p-4">
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_minmax(18rem,24rem)]">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                      Current checkpoint prompt
+                    </p>
+                    {activeLessonCheckpoint ? (
+                      <div className="mt-3 rounded-2xl bg-orange-50 px-4 py-3">
+                        <p className="text-lg font-bold text-slate-900">
+                          {activeLessonCheckpoint.prompt}
+                        </p>
+                        {activeLessonCheckpoint.helperText ? (
+                          <p className="mt-2 text-sm leading-6 text-slate-600">
+                            {activeLessonCheckpoint.helperText}
+                          </p>
+                        ) : null}
+                      </div>
+                    ) : (
+                      <div className="mt-3 rounded-2xl border border-dashed border-slate-300 bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-500">
+                        No checkpoint prompt is open. Students can join the stream, but they will wait here until you open a prompt.
+                      </div>
+                    )}
+
+                    {selectedLessonCheckpoints.length > 0 ? (
+                      <div className="mt-4">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          Earlier prompts
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-2">
+                          {selectedLessonCheckpoints.map((checkpoint, index) => (
+                            <button
+                              key={checkpoint.id}
+                              type="button"
+                              onClick={() => handleReopenCheckpoint(checkpoint.id)}
+                              disabled={
+                                checkpointStatus === "reopening" ||
+                                checkpoint.id === selectedLessonSession.activeCheckpointId ||
+                                selectedLessonSession.userId !== user?.uid
+                              }
+                              className={`rounded-full px-3 py-2 text-xs font-semibold disabled:cursor-not-allowed disabled:opacity-45 ${
+                                checkpoint.id === selectedLessonSession.activeCheckpointId
+                                  ? "bg-slate-900 text-white"
+                                  : "bg-slate-100 text-slate-600"
+                              }`}
+                            >
+                              {index + 1}. {checkpoint.prompt.slice(0, 34)}
+                              {checkpoint.prompt.length > 34 ? "..." : ""}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    ) : null}
+                  </div>
+
+                  {selectedLessonSession.userId === user?.uid ? (
+                    <div className="space-y-3">
+                      <label className="block text-sm font-semibold text-slate-700">
+                        New prompt
+                        <textarea
+                          value={checkpointPromptDraft}
+                          onChange={event => {
+                            setCheckpointPromptDraft(event.target.value);
+                            setCheckpointStatus("idle");
+                          }}
+                          rows={3}
+                          placeholder="e.g. What did you notice about your planning today?"
+                          className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm leading-6 outline-none focus:border-blue-500"
+                        />
+                      </label>
+                      <label className="block text-sm font-semibold text-slate-700">
+                        Optional helper text
+                        <textarea
+                          value={checkpointHelperDraft}
+                          onChange={event => {
+                            setCheckpointHelperDraft(event.target.value);
+                            setCheckpointStatus("idle");
+                          }}
+                          rows={2}
+                          placeholder="Add a sentence to guide students, if needed."
+                          className="mt-2 w-full resize-none rounded-2xl border border-slate-200 bg-slate-50 px-3 py-3 text-sm leading-6 outline-none focus:border-blue-500"
+                        />
+                      </label>
+                      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+                        <button
+                          type="button"
+                          onClick={handleOpenCheckpoint}
+                          disabled={checkpointStatus === "opening" || !checkpointPromptDraft.trim()}
+                          className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
+                        >
+                          {checkpointStatus === "opening" ? "Opening..." : "Open checkpoint"}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleCloseCheckpoint}
+                          disabled={checkpointStatus === "closing" || !activeLessonCheckpoint}
+                          className="btn-secondary disabled:cursor-not-allowed disabled:opacity-45"
+                        >
+                          {checkpointStatus === "closing" ? "Closing..." : "Close prompt"}
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="rounded-2xl bg-slate-50 px-4 py-4 text-sm leading-6 text-slate-500">
+                      This stream was started by {selectedLessonSession.teacherName}. You can view responses, but only the stream owner can open or close prompts.
+                    </div>
+                  )}
+                </div>
+              </div>
+            ) : null}
 
             {error ? (
               <div className="mt-5 rounded-2xl bg-rose-50 p-4 text-sm leading-6 text-rose-700">
@@ -479,6 +649,15 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
                         <p className={`mt-3 text-sm font-semibold ${isSelected ? "text-white" : "text-slate-800"}`}>
                           {reflection.title}
                         </p>
+                        {reflection.lessonCheckpointPrompt ? (
+                          <p
+                            className={`mt-2 rounded-2xl px-3 py-2 text-xs font-semibold ${
+                              isSelected ? "bg-white/15 text-white" : "bg-orange-50 text-orange-700"
+                            }`}
+                          >
+                            Prompt: {reflection.lessonCheckpointPrompt}
+                          </p>
+                        ) : null}
                         <p
                           className={`mt-2 whitespace-pre-line text-sm leading-6 ${
                             isSelected ? "text-slate-100" : "text-slate-600"

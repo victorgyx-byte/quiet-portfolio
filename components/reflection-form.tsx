@@ -12,6 +12,7 @@ import {
 } from "@/lib/reflection-utils";
 import { createReflectionStat } from "@/lib/reflection-stats";
 import {
+  getActiveLessonCheckpoint,
   subscribeToActiveLessonReflectionSessions
 } from "@/lib/reflection-sessions";
 import { createReflection } from "@/lib/reflections";
@@ -121,15 +122,16 @@ export function ReflectionForm() {
 
   const selectedLessonSession =
     activeLessonSessions.find(session => session.id === selectedLessonSessionId) ?? null;
+  const activeLessonCheckpoint = getActiveLessonCheckpoint(selectedLessonSession);
   const lessonTitle = selectedLessonSession?.lessonTitle ?? "";
   const canContinueStep1 = momentText.trim().length > 0 || files.length > 0;
   const canSave = canContinueStep1;
 
   useEffect(() => {
-    if (entryType === "lesson" && step > 0 && !selectedLessonSession) {
+    if (entryType === "lesson" && step > 0 && (!selectedLessonSession || !activeLessonCheckpoint)) {
       setStep(0);
     }
-  }, [entryType, selectedLessonSession, step]);
+  }, [activeLessonCheckpoint, entryType, selectedLessonSession, step]);
 
   function replaceFiles(next: SelectedImage[]) {
     files.forEach(image => URL.revokeObjectURL(image.previewUrl));
@@ -150,7 +152,7 @@ export function ReflectionForm() {
 
   function prepareAnotherLessonCheckpoint() {
     setEntryType("lesson");
-    setStep(selectedLessonSession ? 1 : 0);
+    setStep(selectedLessonSession && activeLessonCheckpoint ? 1 : 0);
     setMomentText("");
     setElaborationText("");
     setCompetencies([]);
@@ -250,6 +252,10 @@ export function ReflectionForm() {
       setError("Choose the active lesson stream before saving lesson reflections.");
       return;
     }
+    if (entryType === "lesson" && !activeLessonCheckpoint) {
+      setError("Wait for your teacher to open a checkpoint prompt before saving.");
+      return;
+    }
 
     setStatus("saving");
     setError("");
@@ -278,7 +284,10 @@ export function ReflectionForm() {
         ...(entryType === "lesson"
           ? {
               lessonSessionId: selectedLessonSessionId,
-              lessonTitle: normalizedLessonTitle
+              lessonTitle: normalizedLessonTitle,
+              lessonCheckpointId: activeLessonCheckpoint?.id,
+              lessonCheckpointPrompt: activeLessonCheckpoint?.prompt,
+              lessonCheckpointHelperText: activeLessonCheckpoint?.helperText
             }
           : {})
       });
@@ -375,9 +384,9 @@ export function ReflectionForm() {
             </p>
           </div>
           <div className={isStudio ? "studio-prompt-block" : ""}>
-            <h2 className="display-title">What are you reflecting for today?</h2>
+            <h2 className="display-title">What kind of checkpoint is this?</h2>
             <p className="mt-1 text-sm leading-6 text-slate-500">
-              Choose the kind of checkpoint you want to capture.
+              Choose where this reflection belongs.
             </p>
           </div>
 
@@ -451,9 +460,9 @@ export function ReflectionForm() {
               {entryType === "lesson" && step === 0 ? (
                 <div className="space-y-4">
                   <div className={isStudio ? "studio-prompt-block" : ""}>
-                    <h2 className="display-title">Which lesson stream are you joining?</h2>
+                    <h2 className="display-title">Which lesson checkpoint are you joining?</h2>
                     <p className="mt-1 text-sm leading-6 text-slate-500">
-                      Choose the active stream your teacher has started for this checkpoint.
+                      Choose the active lesson your teacher has started, then answer the open checkpoint prompt.
                     </p>
                   </div>
                   {activeLessonSessions.length > 0 ? (
@@ -470,8 +479,29 @@ export function ReflectionForm() {
                         ))}
                       </select>
                       {selectedLessonSession ? (
-                        <div className="rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-800">
-                          You’ll submit into {selectedLessonSession.lessonTitle}, started by {selectedLessonSession.teacherName}.
+                        <div className="space-y-2 rounded-2xl border border-teal-200 bg-teal-50 px-4 py-3 text-sm text-teal-800">
+                          <p>
+                            You’ll submit into {selectedLessonSession.lessonTitle}, started by {selectedLessonSession.teacherName}.
+                          </p>
+                          {activeLessonCheckpoint ? (
+                            <div className="rounded-xl bg-white/70 px-3 py-2">
+                              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-teal-700">
+                                Open checkpoint
+                              </p>
+                              <p className="mt-1 font-semibold text-teal-950">
+                                {activeLessonCheckpoint.prompt}
+                              </p>
+                              {activeLessonCheckpoint.helperText ? (
+                                <p className="mt-1 text-xs leading-5 text-teal-700">
+                                  {activeLessonCheckpoint.helperText}
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : (
+                            <p className="rounded-xl bg-white/70 px-3 py-2 text-xs font-semibold text-amber-700">
+                              Your teacher has not opened a checkpoint prompt yet.
+                            </p>
+                          )}
                         </div>
                       ) : null}
                     </>
@@ -484,7 +514,7 @@ export function ReflectionForm() {
                     <button
                       type="button"
                       onClick={() => setStep(1)}
-                      disabled={!selectedLessonSessionId}
+                      disabled={!selectedLessonSessionId || !activeLessonCheckpoint}
                       className="btn-primary disabled:cursor-not-allowed disabled:opacity-45"
                     >
                       Continue
@@ -499,10 +529,15 @@ export function ReflectionForm() {
               {((entryType !== "lesson" && step === 1) || (entryType === "lesson" && step === 1)) ? (
                 <div className="space-y-4">
                   <div className={isStudio ? "studio-prompt-block" : ""}>
-                    <h2 className="display-title">What is one moment that stayed with you today?</h2>
+                    <h2 className="display-title">
+                      {entryType === "lesson" && activeLessonCheckpoint
+                        ? activeLessonCheckpoint.prompt
+                        : "What is one moment that stayed with you?"}
+                    </h2>
                     <p className="mt-1 text-sm leading-6 text-slate-500">
                       {entryType === "lesson"
-                        ? `This checkpoint will be saved under ${lessonTitle}.`
+                        ? activeLessonCheckpoint?.helperText ||
+                          `This checkpoint will be saved under ${lessonTitle}.`
                         : `Choose something from ${getReflectionTypeLabel(entryType).toLowerCase()} that you noticed, felt, tried, struggled with, or want to remember.`}
                     </p>
                   </div>

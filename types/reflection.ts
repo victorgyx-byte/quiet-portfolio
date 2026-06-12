@@ -32,6 +32,9 @@ export type Reflection = {
   reflectionType?: ReflectionType;
   lessonSessionId?: string;
   lessonTitle?: string;
+  lessonCheckpointId?: string;
+  lessonCheckpointPrompt?: string;
+  lessonCheckpointHelperText?: string;
   competencies?: string[];
   category?: string;
   competency?: string;
