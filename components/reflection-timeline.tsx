@@ -313,6 +313,22 @@ export function ReflectionTimeline() {
                               {reflection.visibility === "private" ? "Private" : "Shared"}
                             </span>
                           </div>
+                          {getReflectionType(reflection) === "lesson" &&
+                          reflection.lessonCheckpointPrompt ? (
+                            <div className="mt-3 rounded-2xl bg-orange-50 px-3 py-2">
+                              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-orange-700">
+                                Checkpoint question
+                              </p>
+                              <p className="mt-1 text-sm font-semibold leading-6 text-orange-950">
+                                {reflection.lessonCheckpointPrompt}
+                              </p>
+                              {reflection.lessonCheckpointHelperText ? (
+                                <p className="mt-1 text-xs leading-5 text-orange-700">
+                                  {reflection.lessonCheckpointHelperText}
+                                </p>
+                              ) : null}
+                            </div>
+                          ) : null}
                           <h3 className="mt-3 text-lg font-bold text-slate-900">{reflection.title}</h3>
                           <p className="mt-2 whitespace-pre-line text-sm leading-6 text-slate-600">
                             {reflection.body}
