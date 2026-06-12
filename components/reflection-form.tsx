@@ -542,6 +542,12 @@ export function ReflectionForm() {
                     </p>
                   </div>
 
+                  <PromptChips
+                    chips={ATTENDING_CHIPS}
+                    onSelect={chip =>
+                      insertChipText(chip, momentText, setMomentText, momentTextareaRef.current)
+                    }
+                  />
                   <label className="block">
                     <textarea
                       ref={momentTextareaRef}
@@ -552,12 +558,6 @@ export function ReflectionForm() {
                       className={textAreaClass}
                     />
                   </label>
-                  <PromptChips
-                    chips={ATTENDING_CHIPS}
-                    onSelect={chip =>
-                      insertChipText(chip, momentText, setMomentText, momentTextareaRef.current)
-                    }
-                  />
 
                   <label className="block">
                     <span className="text-sm font-semibold text-slate-800">
@@ -629,6 +629,12 @@ export function ReflectionForm() {
                       What might it show about you, others, or the situation?
                     </p>
                   </div>
+                  <PromptChips
+                    chips={INTERPRETING_CHIPS}
+                    onSelect={chip =>
+                      insertChipText(chip, elaborationText, setElaborationText, elaborationTextareaRef.current)
+                    }
+                  />
                   <textarea
                     ref={elaborationTextareaRef}
                     value={elaborationText}
@@ -636,12 +642,6 @@ export function ReflectionForm() {
                     placeholder="This stayed with me because..."
                     rows={5}
                     className={textAreaClass}
-                  />
-                  <PromptChips
-                    chips={INTERPRETING_CHIPS}
-                    onSelect={chip =>
-                      insertChipText(chip, elaborationText, setElaborationText, elaborationTextareaRef.current)
-                    }
                   />
                   <div className="grid gap-2 sm:grid-cols-3">
                     <button type="button" onClick={() => setStep(current => current + 1)} className="btn-primary sm:col-span-1">
