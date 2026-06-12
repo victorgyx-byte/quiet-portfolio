@@ -27,6 +27,7 @@ import type { ReflectionStat } from "@/types/reflection-stats";
 import type { Reflection, TeacherFeedbackNote } from "@/types/reflection";
 
 type TeacherTab = "live" | "review" | "trends" | "notifications";
+const TEACHER_REVIEW_PAGE_SIZE = 10;
 
 function formatDate(reflection: Reflection) {
   const date = reflection.createdAt?.toDate();
@@ -74,6 +75,7 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
   const [statsError, setStatsError] = useState("");
   const [studentFilter, setStudentFilter] = useState("all");
   const [competencyFilter, setCompetencyFilter] = useState("all");
+  const [reviewVisibleCount, setReviewVisibleCount] = useState(TEACHER_REVIEW_PAGE_SIZE);
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [selectedPastLessonKey, setSelectedPastLessonKey] = useState("");
   const [activeLessonSessions, setActiveLessonSessions] = useState<ReflectionSession[]>([]);
@@ -235,6 +237,13 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
     setFeedbackStatus("idle");
   }, [selectedLiveId, expandedId, activeTab]);
 
+  useEffect(() => {
+    setReviewVisibleCount(TEACHER_REVIEW_PAGE_SIZE);
+    setExpandedId(null);
+    setFeedbackText("");
+    setFeedbackStatus("idle");
+  }, [competencyFilter, studentFilter]);
+
   const students = useMemo(() => {
     const map = new Map<string, { key: string; name: string; email: string; count: number }>();
     reviewSource.forEach(reflection => {
@@ -274,9 +283,15 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
   const selectedPastLessonGroup =
     pastLessonGroups.find(group => group.key === selectedPastLessonKey) ?? null;
 
+  const visibleReviewReflections = useMemo(
+    () => filteredReviewReflections.slice(0, reviewVisibleCount),
+    [filteredReviewReflections, reviewVisibleCount]
+  );
+  const hasMoreReviewReflections = reviewVisibleCount < filteredReviewReflections.length;
+
   const groupedReviewReflections = useMemo(() => {
     const map = new Map<string, { studentName: string; studentEmail: string; items: Reflection[] }>();
-    filteredReviewReflections.forEach(reflection => {
+    visibleReviewReflections.forEach(reflection => {
       const key = getStudentKey(reflection);
       const current = map.get(key);
       map.set(key, {
@@ -286,7 +301,7 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
       });
     });
     return [...map.entries()].map(([key, value]) => ({ key, ...value }));
-  }, [filteredReviewReflections]);
+  }, [visibleReviewReflections]);
 
   const competencyTrends = useMemo(
     () =>
@@ -1048,6 +1063,16 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
               </label>
             </div>
 
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-2 rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
+              <span>
+                Showing {Math.min(visibleReviewReflections.length, filteredReviewReflections.length)} of{" "}
+                {filteredReviewReflections.length} matching reflections.
+              </span>
+              <span className="font-semibold">
+                {TEACHER_REVIEW_PAGE_SIZE} at a time
+              </span>
+            </div>
+
             {error ? (
               <div className="mt-5 rounded-2xl bg-rose-50 p-4 text-sm leading-6 text-rose-700">
                 {error}
@@ -1181,6 +1206,18 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
                   </div>
                 </details>
               ))}
+
+              {hasMoreReviewReflections ? (
+                <button
+                  type="button"
+                  onClick={() =>
+                    setReviewVisibleCount(current => current + TEACHER_REVIEW_PAGE_SIZE)
+                  }
+                  className="btn-secondary w-full"
+                >
+                  Load 10 more
+                </button>
+              ) : null}
             </div>
           </section>
         </>
