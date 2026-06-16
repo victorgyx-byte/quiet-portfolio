@@ -7,6 +7,11 @@ export type ReflectionImage = {
   size: number;
 };
 
+export type ReflectionEvidenceFile = ReflectionImage & {
+  kind: "image" | "audio";
+  name: string;
+};
+
 export type ReflectionVisibility = "private" | "shared_with_teacher";
 export type ReflectionType = "general" | "lesson" | "cca";
 
@@ -36,6 +41,8 @@ export type Reflection = {
   lessonCheckpointPrompt?: string;
   lessonCheckpointHelperText?: string;
   competencies?: string[];
+  evidenceText?: string;
+  evidenceFiles?: ReflectionEvidenceFile[];
   category?: string;
   competency?: string;
   visibility: ReflectionVisibility;

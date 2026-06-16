@@ -76,7 +76,10 @@ export async function deleteReflection(reflection: Reflection) {
   const imageDeletions = (reflection.images ?? []).map(image =>
     deleteObject(storageRef(storage, image.path)).catch(() => undefined)
   );
-  await Promise.all(imageDeletions);
+  const evidenceDeletions = (reflection.evidenceFiles ?? []).map(file =>
+    deleteObject(storageRef(storage, file.path)).catch(() => undefined)
+  );
+  await Promise.all([...imageDeletions, ...evidenceDeletions]);
   await deleteDoc(reflectionRef);
 }
 

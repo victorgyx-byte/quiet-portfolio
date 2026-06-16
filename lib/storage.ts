@@ -2,7 +2,7 @@
 
 import { getDownloadURL, ref, uploadBytes } from "firebase/storage";
 import { storage } from "@/lib/firebase";
-import type { ReflectionImage } from "@/types/reflection";
+import type { ReflectionEvidenceFile, ReflectionImage } from "@/types/reflection";
 
 const MAX_WIDTH = 1600;
 const JPEG_QUALITY = 0.82;
@@ -75,6 +75,44 @@ export async function uploadReflectionImages(userId: string, files: File[]) {
   }
 
   const uploads: ReflectionImage[] = [];
+  for (let start = 0; start < files.length; start += UPLOAD_CONCURRENCY) {
+    const batch = files.slice(start, start + UPLOAD_CONCURRENCY);
+    const batchUploads = await Promise.all(
+      batch.map((file, offset) => uploadOne(file, start + offset))
+    );
+    uploads.push(...batchUploads);
+  }
+
+  return uploads;
+}
+
+export async function uploadReflectionEvidenceFiles(userId: string, files: File[]) {
+  async function uploadOne(file: File, index: number) {
+    const timestamp = Date.now();
+    const safeName = file.name.replace(/\s+/g, "_");
+    const kind: ReflectionEvidenceFile["kind"] = file.type.startsWith("audio/")
+      ? "audio"
+      : "image";
+    const extension = kind === "audio" ? safeName : `${safeName}.jpg`;
+    const path = `reflections/${userId}/evidence/${timestamp}-${index}-${extension}`;
+    const fileRef = ref(storage, path);
+
+    const uploadBody = kind === "image" ? await compressImage(file) : file;
+    const contentType = kind === "image" ? "image/jpeg" : file.type || "audio/mpeg";
+    await uploadBytes(fileRef, uploadBody, { contentType });
+    const url = await getDownloadURL(fileRef);
+
+    return {
+      url,
+      path,
+      contentType,
+      size: uploadBody.size,
+      kind,
+      name: file.name
+    } as ReflectionEvidenceFile;
+  }
+
+  const uploads: ReflectionEvidenceFile[] = [];
   for (let start = 0; start < files.length; start += UPLOAD_CONCURRENCY) {
     const batch = files.slice(start, start + UPLOAD_CONCURRENCY);
     const batchUploads = await Promise.all(

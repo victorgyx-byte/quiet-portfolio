@@ -364,6 +364,51 @@ export function ReflectionTimeline() {
                                 </div>
                               ) : null}
 
+                              {(reflection.evidenceText || reflection.evidenceFiles?.length) ? (
+                                <div className={isStudio ? "studio-follow-up-panel" : "space-y-3 rounded-2xl border border-orange-200 bg-orange-50/70 p-3"}>
+                                  <p className="text-sm font-semibold text-orange-950">
+                                    Evidence
+                                  </p>
+                                  {reflection.evidenceText ? (
+                                    <p className="whitespace-pre-line text-sm leading-6 text-slate-700">
+                                      {reflection.evidenceText}
+                                    </p>
+                                  ) : null}
+                                  {reflection.evidenceFiles?.length ? (
+                                    <div className="grid gap-2 sm:grid-cols-2">
+                                      {reflection.evidenceFiles.map(file =>
+                                        file.kind === "image" ? (
+                                          <a
+                                            key={file.path}
+                                            href={file.url}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="block rounded-2xl border border-orange-100 bg-white p-2"
+                                          >
+                                            <img
+                                              src={file.url}
+                                              alt={file.name || "Evidence upload"}
+                                              className="mx-auto max-h-48 w-auto max-w-full rounded-xl object-contain"
+                                              loading="lazy"
+                                            />
+                                          </a>
+                                        ) : (
+                                          <div
+                                            key={file.path}
+                                            className="rounded-2xl border border-orange-100 bg-white p-3"
+                                          >
+                                            <p className="mb-2 text-xs font-semibold text-slate-500">
+                                              {file.name || "Audio evidence"}
+                                            </p>
+                                            <audio controls src={file.url} className="w-full" />
+                                          </div>
+                                        )
+                                      )}
+                                    </div>
+                                  ) : null}
+                                </div>
+                              ) : null}
+
                               <div className={isStudio ? "studio-follow-up-panel" : "space-y-3 rounded-2xl border border-slate-200 bg-slate-50 p-3"}>
                                 <p className="text-sm font-semibold text-slate-800">
                                   Additional reflections

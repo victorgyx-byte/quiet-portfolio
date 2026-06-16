@@ -16,11 +16,12 @@ import {
   subscribeToActiveLessonReflectionSessions
 } from "@/lib/reflection-sessions";
 import { createReflection } from "@/lib/reflections";
-import { uploadReflectionImages } from "@/lib/storage";
+import { uploadReflectionEvidenceFiles, uploadReflectionImages } from "@/lib/storage";
 import type { ReflectionType, ReflectionVisibility } from "@/types/reflection";
 import type { ReflectionSession } from "@/types/reflection-session";
 
 const MAX_IMAGES = 5;
+const MAX_EVIDENCE_FILES = 4;
 const MAX_COMPETENCIES = 3;
 const ATTENDING_CHIPS = [
   "I noticed...",
@@ -46,6 +47,10 @@ const INTERPRETING_CHIPS = [
 type SelectedImage = {
   file: File;
   previewUrl: string;
+};
+
+type SelectedEvidenceFile = SelectedImage & {
+  kind: "image" | "audio";
 };
 
 type SaveStatus = "idle" | "saving" | "saved" | "error";
@@ -85,12 +90,15 @@ export function ReflectionForm() {
   const [momentText, setMomentText] = useState("");
   const [elaborationText, setElaborationText] = useState("");
   const [competencies, setCompetencies] = useState<string[]>([]);
+  const [evidenceText, setEvidenceText] = useState("");
   const [visibility, setVisibility] = useState<ReflectionVisibility>("private");
   const [files, setFiles] = useState<SelectedImage[]>([]);
+  const [evidenceFiles, setEvidenceFiles] = useState<SelectedEvidenceFile[]>([]);
   const [status, setStatus] = useState<SaveStatus>("idle");
   const [error, setError] = useState("");
   const cameraInputRef = useRef<HTMLInputElement | null>(null);
   const libraryInputRef = useRef<HTMLInputElement | null>(null);
+  const evidenceInputRef = useRef<HTMLInputElement | null>(null);
   const momentTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const elaborationTextareaRef = useRef<HTMLTextAreaElement | null>(null);
 
@@ -104,8 +112,9 @@ export function ReflectionForm() {
   useEffect(() => {
     return () => {
       files.forEach(image => URL.revokeObjectURL(image.previewUrl));
+      evidenceFiles.forEach(file => URL.revokeObjectURL(file.previewUrl));
     };
-  }, [files]);
+  }, [evidenceFiles, files]);
 
   useEffect(() => {
     if (activeLessonSessions.length === 0) {
@@ -138,14 +147,21 @@ export function ReflectionForm() {
     setFiles(next);
   }
 
+  function replaceEvidenceFiles(next: SelectedEvidenceFile[]) {
+    evidenceFiles.forEach(file => URL.revokeObjectURL(file.previewUrl));
+    setEvidenceFiles(next);
+  }
+
   function resetFlow() {
     setEntryType(null);
     setStep(1);
     setMomentText("");
     setElaborationText("");
     setCompetencies([]);
+    setEvidenceText("");
     setVisibility("private");
     replaceFiles([]);
+    replaceEvidenceFiles([]);
     setStatus("idle");
     setError("");
   }
@@ -156,8 +172,10 @@ export function ReflectionForm() {
     setMomentText("");
     setElaborationText("");
     setCompetencies([]);
+    setEvidenceText("");
     setVisibility("private");
     replaceFiles([]);
+    replaceEvidenceFiles([]);
     setStatus("idle");
     setError("");
   }
@@ -194,8 +212,45 @@ export function ReflectionForm() {
     event.target.value = "";
   }
 
+  function handleEvidenceFileChange(event: ChangeEvent<HTMLInputElement>) {
+    const nextFiles = Array.from(event.target.files ?? []);
+    const acceptedFiles = nextFiles.filter(
+      file => file.type.startsWith("image/") || file.type.startsWith("audio/")
+    );
+
+    const remainingSlots = Math.max(0, MAX_EVIDENCE_FILES - evidenceFiles.length);
+    if (remainingSlots === 0) {
+      setError(`You can add up to ${MAX_EVIDENCE_FILES} evidence files.`);
+      event.target.value = "";
+      return;
+    }
+
+    if (acceptedFiles.length > remainingSlots) {
+      setError(`You can add up to ${MAX_EVIDENCE_FILES} evidence files.`);
+    } else {
+      setError("");
+    }
+
+    const selected = acceptedFiles.slice(0, remainingSlots).map(file => ({
+      file,
+      previewUrl: URL.createObjectURL(file),
+      kind: file.type.startsWith("audio/") ? ("audio" as const) : ("image" as const)
+    }));
+    setEvidenceFiles(current => [...current, ...selected]);
+    event.target.value = "";
+  }
+
   function removeImage(index: number) {
     setFiles(current => {
+      const copy = [...current];
+      const removed = copy.splice(index, 1)[0];
+      if (removed) URL.revokeObjectURL(removed.previewUrl);
+      return copy;
+    });
+  }
+
+  function removeEvidenceFile(index: number) {
+    setEvidenceFiles(current => {
       const copy = [...current];
       const removed = copy.splice(index, 1)[0];
       if (removed) URL.revokeObjectURL(removed.previewUrl);
@@ -267,6 +322,12 @@ export function ReflectionForm() {
             files.map(image => image.file)
           )
         : [];
+      const uploadedEvidenceFiles = evidenceFiles.length
+        ? await uploadReflectionEvidenceFiles(
+            user.uid,
+            evidenceFiles.map(file => file.file)
+          )
+        : [];
 
       const nextVisibility: ReflectionVisibility =
         entryType === "lesson" ? "shared_with_teacher" : visibility;
@@ -279,6 +340,8 @@ export function ReflectionForm() {
         body: buildReflectionBody(momentText, elaborationText),
         reflectionType: entryType,
         competencies,
+        evidenceText: evidenceText.trim(),
+        evidenceFiles: uploadedEvidenceFiles,
         visibility: nextVisibility,
         images,
         ...(entryType === "lesson"
@@ -683,6 +746,77 @@ export function ReflectionForm() {
                         {item}
                       </button>
                     ))}
+                  </div>
+
+                  <div className={isStudio ? "studio-follow-up-panel" : "space-y-3 rounded-2xl border border-slate-200 bg-white/70 p-3"}>
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900">
+                        What evidence shows that?
+                      </h3>
+                      <p className="mt-1 text-xs leading-5 text-slate-500">
+                        Optional. Add a short note, photo, or audio file that helps show the growth you chose.
+                      </p>
+                    </div>
+                    <textarea
+                      value={evidenceText}
+                      onChange={event => setEvidenceText(event.target.value)}
+                      placeholder="The evidence is..."
+                      rows={3}
+                      className={textAreaClass}
+                    />
+                    <div className="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-center">
+                      <button
+                        type="button"
+                        onClick={() => evidenceInputRef.current?.click()}
+                        className="btn-secondary"
+                      >
+                        Add photo or audio
+                      </button>
+                      <span className="text-xs font-semibold text-slate-500">
+                        {evidenceFiles.length}/{MAX_EVIDENCE_FILES}
+                      </span>
+                      <input
+                        ref={evidenceInputRef}
+                        type="file"
+                        accept="image/*,audio/*"
+                        multiple
+                        onChange={handleEvidenceFileChange}
+                        className="hidden"
+                      />
+                    </div>
+
+                    {evidenceFiles.length ? (
+                      <div className="grid gap-2 sm:grid-cols-2">
+                        {evidenceFiles.map((item, index) => (
+                          <div
+                            key={`${item.file.name}-${item.file.size}-${index}`}
+                            className="rounded-2xl border border-slate-200 bg-white p-2"
+                          >
+                            {item.kind === "image" ? (
+                              <img
+                                src={item.previewUrl}
+                                alt={item.file.name}
+                                className="h-24 w-full rounded-xl object-cover"
+                              />
+                            ) : (
+                              <div className="rounded-xl bg-slate-50 p-3">
+                                <p className="mb-2 text-xs font-semibold text-slate-600">
+                                  {item.file.name}
+                                </p>
+                                <audio controls src={item.previewUrl} className="w-full" />
+                              </div>
+                            )}
+                            <button
+                              type="button"
+                              onClick={() => removeEvidenceFile(index)}
+                              className="btn-tertiary mt-2 w-full border-rose-200 bg-rose-50 text-rose-600"
+                            >
+                              Remove
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
 
                   {entryType === "lesson" ? (
