@@ -133,6 +133,36 @@ function ReflectionReferenceList({
   );
 }
 
+function SelectedMomentsPreview({
+  reflections,
+  selectedReflectionIds
+}: {
+  reflections: Reflection[];
+  selectedReflectionIds: string[];
+}) {
+  if (reflections.length === 0) return null;
+
+  return (
+    <aside className="portfolio-reference-panel rounded-2xl border border-orange-200 bg-orange-50/70 p-3">
+      <div className="flex items-center justify-between gap-3">
+        <p className="text-sm font-bold text-slate-900">Moments you chose</p>
+        <span className="rounded-full bg-orange-100 px-3 py-1 text-xs font-bold text-orange-700">
+          {reflections.length}
+        </span>
+      </div>
+      <p className="mt-1 text-xs leading-5 text-slate-500">
+        Keep these nearby as evidence while you write.
+      </p>
+      <div className="mt-3">
+        <ReflectionReferenceList
+          reflections={reflections}
+          selectedReflectionIds={selectedReflectionIds}
+        />
+      </div>
+    </aside>
+  );
+}
+
 function addPageIfNeeded(doc: { addPage: () => void }, cursor: number, needed = 18) {
   const limit = 282;
   if (cursor + needed > limit) {
@@ -239,8 +269,6 @@ export function PortfolioBuilder() {
     () => reflections.filter(item => selectedReflectionIds.includes(item.id)),
     [reflections, selectedReflectionIds]
   );
-  const shouldShowSelectedReferences =
-    isCreating && createStep >= 4 && createStep <= 5 && selectedReflections.length > 0;
 
   const googleConnectStatus = searchParams.get("google_connect");
 
@@ -641,29 +669,13 @@ export function PortfolioBuilder() {
             </div>
           ) : null}
 
-          {shouldShowSelectedReferences ? (
-            <aside className="portfolio-reference-panel">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-bold text-slate-900">Selected moments</p>
-                <span className="rounded-full bg-orange-50 px-3 py-1 text-xs font-bold text-orange-700">
-                  {selectedReflections.length}
-                </span>
-              </div>
-              <p className="mt-1 text-xs leading-5 text-slate-500">
-                Keep these nearby as evidence while you write.
-              </p>
-              <div className="mt-3">
-                <ReflectionReferenceList
-                  reflections={selectedReflections}
-                  selectedReflectionIds={selectedReflectionIds}
-                />
-              </div>
-            </aside>
-          ) : null}
-
           {createStep === 4 ? (
             <div className="space-y-3">
               <h3 className="text-xl font-bold text-slate-900">Why did you choose these moments?</h3>
+              <SelectedMomentsPreview
+                reflections={selectedReflections}
+                selectedReflectionIds={selectedReflectionIds}
+              />
               <textarea
                 value={connectionText}
                 onChange={event => setConnectionText(event.target.value)}
@@ -682,6 +694,10 @@ export function PortfolioBuilder() {
               <p className="text-sm text-slate-500">
                 Look across your selected moments. What changed, what pattern do you notice, or what are you learning about yourself?
               </p>
+              <SelectedMomentsPreview
+                reflections={selectedReflections}
+                selectedReflectionIds={selectedReflectionIds}
+              />
               <textarea
                 value={growthStatement}
                 onChange={event => setGrowthStatement(event.target.value)}
