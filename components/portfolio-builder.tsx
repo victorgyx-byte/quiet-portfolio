@@ -47,6 +47,15 @@ const FOCUS_TAGS = [
   "Cross-Cultural Literacy"
 ];
 
+const NEXT_ACTION_CHIPS = [
+  "I will try...",
+  "I will continue...",
+  "I will change...",
+  "I will ask for...",
+  "I want to improve...",
+  "My next checkpoint is..."
+];
+
 function formatDate(dateValue?: { toDate: () => Date }) {
   const date = dateValue?.toDate();
   if (!date) return "Recent";
@@ -186,6 +195,7 @@ export function PortfolioBuilder() {
   const [connectionText, setConnectionText] = useState("");
   const [ipsativeText, setIpsativeText] = useState("");
   const [growthStatement, setGrowthStatement] = useState("");
+  const [nextActionText, setNextActionText] = useState("");
   const [title, setTitle] = useState("My Portfolio");
   const [slidesIntegration, setSlidesIntegration] = useState<SlidesDeckIntegration | null>(null);
 
@@ -218,7 +228,10 @@ export function PortfolioBuilder() {
     setSelectedReflectionIds(selectedPortfolio.selectedReflectionIds ?? []);
     setConnectionText(selectedPortfolio.connectionText ?? "");
     setIpsativeText(selectedPortfolio.ipsativeText ?? "");
-    setGrowthStatement(selectedPortfolio.growthStatement ?? "");
+    setGrowthStatement(
+      selectedPortfolio.growthStatement?.trim() || selectedPortfolio.ipsativeText?.trim() || ""
+    );
+    setNextActionText(selectedPortfolio.nextActionText ?? "");
     setSlidesIntegration(selectedPortfolio.slidesIntegration ?? null);
   }, [selectedPortfolio, isCreating]);
 
@@ -241,6 +254,7 @@ export function PortfolioBuilder() {
     setConnectionText("");
     setIpsativeText("");
     setGrowthStatement("");
+    setNextActionText("");
     setSlidesIntegration(null);
     setStartNewDeck(false);
   }
@@ -255,6 +269,13 @@ export function PortfolioBuilder() {
     setSelectedReflectionIds(current =>
       current.includes(id) ? current.filter(item => item !== id) : [...current, id]
     );
+  }
+
+  function addNextActionChip(chip: string) {
+    setNextActionText(current => {
+      const trimmed = current.trim();
+      return trimmed ? `${trimmed}\n${chip}` : chip;
+    });
   }
 
   async function handleCreatePortfolio() {
@@ -276,8 +297,9 @@ export function PortfolioBuilder() {
         focusTags,
         selectedReflectionIds,
         connectionText: connectionText.trim(),
-        ipsativeText: ipsativeText.trim(),
+        ipsativeText: "",
         growthStatement: growthStatement.trim(),
+        nextActionText: nextActionText.trim(),
         updates: [],
         slidesIntegration: null
       });
@@ -304,8 +326,9 @@ export function PortfolioBuilder() {
         focusTags,
         selectedReflectionIds,
         connectionText: connectionText.trim(),
-        ipsativeText: ipsativeText.trim(),
-        growthStatement: growthStatement.trim()
+        ipsativeText: selectedPortfolio.ipsativeText ?? "",
+        growthStatement: growthStatement.trim(),
+        nextActionText: nextActionText.trim()
       });
       setStatusMessage("Portfolio updated.");
     } catch {
@@ -350,6 +373,7 @@ export function PortfolioBuilder() {
 
   function buildSlidesPayload(): SlidesExportPayload | null {
     if (!user) return null;
+    const effectiveGrowthStatement = growthStatement.trim() || ipsativeText.trim();
     return {
       version: "slides-export-v1",
       generatedAt: new Date().toISOString(),
@@ -360,14 +384,15 @@ export function PortfolioBuilder() {
       },
       portfolio: {
         title: title.trim() || "My Portfolio",
-        growthStatement: growthStatement.trim(),
+        growthStatement: effectiveGrowthStatement,
         purpose:
           purpose === "something_else"
             ? purposeOther.trim()
             : PURPOSE_OPTIONS.find(item => item.id === purpose)?.label,
         focusTags,
         connectionText: connectionText.trim(),
-        ipsativeText: ipsativeText.trim()
+        ipsativeText: ipsativeText.trim(),
+        nextActionText: nextActionText.trim()
       },
       reflections: selectedReflections.map(reflection => ({
         reflectionId: reflection.id,
@@ -453,9 +478,31 @@ export function PortfolioBuilder() {
       y += 7;
       doc.setFont("helvetica", "normal");
       doc.setFontSize(11);
-      const growthLines = doc.splitTextToSize(growthStatement || "Growth statement", width);
+      const growthLines = doc.splitTextToSize(
+        growthStatement.trim() || ipsativeText.trim() || "Growth statement",
+        width
+      );
       doc.text(growthLines, margin, y);
       y += growthLines.length * 6 + 8;
+
+      if (nextActionText.trim()) {
+        y = addPageIfNeeded(doc, y, 24);
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(14);
+        doc.text("Next Action", margin, y);
+        y += 7;
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(11);
+        const nextActionLines = doc.splitTextToSize(nextActionText.trim(), width);
+        doc.text(nextActionLines, margin, y);
+        y += nextActionLines.length * 6 + 8;
+      }
+
+      y = addPageIfNeeded(doc, y, 14);
+      doc.setFont("helvetica", "bold");
+      doc.setFontSize(14);
+      doc.text("Selected Reflections", margin, y);
+      y += 8;
 
       for (const reflection of selectedReflections) {
         y = addPageIfNeeded(doc, y, 36);
@@ -629,11 +676,16 @@ export function PortfolioBuilder() {
 
           {createStep === 5 ? (
             <div className="space-y-3">
-              <h3 className="text-xl font-bold text-slate-900">What do you notice across time?</h3>
+              <h3 className="text-xl font-bold text-slate-900">
+                What does this show about your growth?
+              </h3>
+              <p className="text-sm text-slate-500">
+                Look across your selected moments. What changed, what pattern do you notice, or what are you learning about yourself?
+              </p>
               <textarea
-                value={ipsativeText}
-                onChange={event => setIpsativeText(event.target.value)}
-                placeholder="What changed from then to now?"
+                value={growthStatement}
+                onChange={event => setGrowthStatement(event.target.value)}
+                placeholder="Across these moments, I can see..."
                 rows={5}
                 className={isStudio ? "studio-open-input w-full text-sm outline-none" : "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-500"}
               />
@@ -642,19 +694,35 @@ export function PortfolioBuilder() {
 
           {createStep === 6 ? (
             <div className="space-y-3">
-              <h3 className="text-xl font-bold text-slate-900">
-                Let's give your portfolio a title and a growth statement
-              </h3>
-              <input
-                value={title}
-                onChange={event => setTitle(event.target.value)}
-                placeholder="Portfolio title"
-                className={isStudio ? "studio-open-input min-h-11 w-full text-sm outline-none" : "min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-500"}
-              />
+              <h3 className="text-xl font-bold text-slate-900">What will you do next?</h3>
+              <p className="text-sm text-slate-500">Use this portfolio to decide one next step.</p>
+              <div className="space-y-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                  Portfolio title
+                </p>
+                <input
+                  value={title}
+                  onChange={event => setTitle(event.target.value)}
+                  placeholder="Portfolio title"
+                  className={isStudio ? "studio-open-input min-h-11 w-full text-sm outline-none" : "min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-500"}
+                />
+              </div>
+              <div className={isStudio ? "studio-chip-cloud" : "flex flex-wrap gap-2"}>
+                {NEXT_ACTION_CHIPS.map(chip => (
+                  <button
+                    key={chip}
+                    type="button"
+                    onClick={() => addNextActionChip(chip)}
+                    className={isStudio ? "studio-chip" : "rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600"}
+                  >
+                    {chip}
+                  </button>
+                ))}
+              </div>
               <textarea
-                value={growthStatement}
-                onChange={event => setGrowthStatement(event.target.value)}
-                placeholder="Growth statement..."
+                value={nextActionText}
+                onChange={event => setNextActionText(event.target.value)}
+                placeholder="My next step is..."
                 rows={5}
                 className={isStudio ? "studio-open-input w-full text-sm outline-none" : "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-500"}
               />
@@ -734,13 +802,42 @@ export function PortfolioBuilder() {
                         onChange={event => setTitle(event.target.value)}
                         className={isStudio ? "studio-open-input min-h-11 w-full text-sm outline-none" : "min-h-11 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 text-sm outline-none focus:border-blue-500"}
                       />
-                      <textarea
-                        value={growthStatement}
-                        onChange={event => setGrowthStatement(event.target.value)}
-                        placeholder="Growth statement..."
-                        rows={4}
-                        className={isStudio ? "studio-open-input w-full text-sm outline-none" : "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-500"}
-                      />
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          Growth statement
+                        </p>
+                        <textarea
+                          value={growthStatement}
+                          onChange={event => setGrowthStatement(event.target.value)}
+                          placeholder="What does this show about your growth?"
+                          rows={4}
+                          className={isStudio ? "studio-open-input w-full text-sm outline-none" : "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-500"}
+                        />
+                      </div>
+                      <div className="space-y-2">
+                        <p className="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                          Next action
+                        </p>
+                        <div className={isStudio ? "studio-chip-cloud" : "flex flex-wrap gap-2"}>
+                          {NEXT_ACTION_CHIPS.map(chip => (
+                            <button
+                              key={chip}
+                              type="button"
+                              onClick={() => addNextActionChip(chip)}
+                              className={isStudio ? "studio-chip" : "rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-semibold text-slate-600"}
+                            >
+                              {chip}
+                            </button>
+                          ))}
+                        </div>
+                        <textarea
+                          value={nextActionText}
+                          onChange={event => setNextActionText(event.target.value)}
+                          placeholder="What will you do next?"
+                          rows={4}
+                          className={isStudio ? "studio-open-input w-full text-sm outline-none" : "w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm outline-none focus:border-blue-500"}
+                        />
+                      </div>
                       <div className="max-h-60 space-y-2 overflow-auto pr-1">
                         {reflections.map(reflection => (
                           <label key={reflection.id} className={isStudio ? "studio-choice-row" : "flex gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2"}>

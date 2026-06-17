@@ -30,6 +30,7 @@ export type SlidesExportPayload = {
     focusTags?: string[];
     connectionText?: string;
     ipsativeText?: string;
+    nextActionText?: string;
   };
   reflections: SlidesExportReflection[];
 };

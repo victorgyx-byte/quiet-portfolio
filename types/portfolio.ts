@@ -27,6 +27,7 @@ export type Portfolio = {
   connectionText: string;
   ipsativeText: string;
   growthStatement: string;
+  nextActionText?: string;
   updates?: PortfolioUpdate[];
   slidesIntegration?: SlidesDeckIntegration | null;
   createdAt?: Timestamp;

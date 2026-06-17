@@ -225,6 +225,26 @@ function insertStyledText(
   ];
 }
 
+function replaceStyledText(
+  objectId: string,
+  text: string,
+  options: {
+    size: number;
+    color?: keyof typeof COLORS;
+    bold?: boolean;
+  }
+) {
+  return [
+    {
+      deleteText: {
+        objectId,
+        textRange: { type: "ALL" }
+      }
+    },
+    ...insertStyledText(objectId, text, options)
+  ];
+}
+
 function setSlideBackground(slideId: string) {
   return {
     updatePageProperties: {
@@ -283,7 +303,10 @@ async function addCoverSlide(
   const studentId = "cover_student";
   const statementId = "cover_statement";
   const accentId = "cover_accent";
-  const subtitle = payload.portfolio.growthStatement.trim() || "Learning reflection";
+  const subtitle =
+    payload.portfolio.growthStatement.trim() ||
+    payload.portfolio.ipsativeText?.trim() ||
+    "Learning reflection";
 
   const requests: Record<string, unknown>[] = [
     createBlankSlide(coverSlideId, 0),
@@ -336,17 +359,7 @@ async function addNarrativeSlide(
   deckId: string,
   payload: SlidesExportPayload
 ) {
-  const lines: string[] = [];
-  if (payload.portfolio.purpose) lines.push(`Purpose: ${payload.portfolio.purpose}`);
-  if (payload.portfolio.focusTags?.length) {
-    lines.push(`Focus: ${payload.portfolio.focusTags.join(", ")}`);
-  }
-  if (payload.portfolio.connectionText) {
-    lines.push(`Why these moments:\n${payload.portfolio.connectionText}`);
-  }
-  if (payload.portfolio.ipsativeText) {
-    lines.push(`Across time:\n${payload.portfolio.ipsativeText}`);
-  }
+  const lines = buildPortfolioNarrativeLines(payload);
   if (lines.length === 0) return;
 
   const slideId = "meaning_slide";
@@ -385,6 +398,66 @@ async function addNarrativeSlide(
 
   if (!response.ok) {
     throw new Error("We couldn't add your portfolio explanation slide. Please try again.");
+  }
+}
+
+function buildPortfolioNarrativeLines(payload: SlidesExportPayload) {
+  const lines: string[] = [];
+  if (payload.portfolio.purpose) lines.push(`Purpose: ${payload.portfolio.purpose}`);
+  if (payload.portfolio.focusTags?.length) {
+    lines.push(`Focus: ${payload.portfolio.focusTags.join(", ")}`);
+  }
+  if (payload.portfolio.connectionText) {
+    lines.push(`Why these moments:\n${payload.portfolio.connectionText}`);
+  }
+  const growthStatement =
+    payload.portfolio.growthStatement.trim() || payload.portfolio.ipsativeText?.trim() || "";
+  if (growthStatement) {
+    lines.push(`Growth statement:\n${growthStatement}`);
+  }
+  if (payload.portfolio.nextActionText?.trim()) {
+    lines.push(`Decision:\n${payload.portfolio.nextActionText.trim()}`);
+  }
+  return lines;
+}
+
+async function updatePortfolioSummarySlides(
+  token: string,
+  deckId: string,
+  payload: SlidesExportPayload
+) {
+  const subtitle =
+    payload.portfolio.growthStatement.trim() ||
+    payload.portfolio.ipsativeText?.trim() ||
+    "Learning reflection";
+  const lines = buildPortfolioNarrativeLines(payload);
+  const requests: Record<string, unknown>[] = [
+    ...replaceStyledText("cover_title", payload.portfolio.title, {
+      size: 34,
+      color: "ink",
+      bold: true
+    }),
+    ...replaceStyledText("cover_statement", subtitle, {
+      size: 16,
+      color: "muted"
+    })
+  ];
+  if (lines.length > 0) {
+    requests.push(
+      ...replaceStyledText("meaning_body", lines.join("\n\n"), {
+        size: 13,
+        color: "muted"
+      })
+    );
+  }
+  const response = await googleRequest(
+    `${GOOGLE_SLIDES_PRESENTATIONS}/${deckId}:batchUpdate`,
+    token,
+    { method: "POST", body: JSON.stringify({ requests }) }
+  );
+
+  if (!response.ok) {
+    console.error("Google Slides summary refresh failed", await readGoogleError(response));
   }
 }
 
@@ -691,6 +764,8 @@ export async function POST(request: NextRequest) {
       deckUrl = created.deckUrl;
       await addCoverSlide(token, deckId, payload, created.defaultSlideId);
       await addNarrativeSlide(token, deckId, payload);
+    } else {
+      await updatePortfolioSummarySlides(token, deckId, payload);
     }
 
     let addedSlides = 0;

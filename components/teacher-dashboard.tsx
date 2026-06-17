@@ -1135,7 +1135,7 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
               ) : null}
 
               {groupedReviewReflections.map(group => (
-                <details key={group.key} open className="rounded-2xl border border-slate-200 bg-white p-3">
+                <details key={group.key} open className="rounded-2xl border border-slate-200 bg-white p-4">
                   <summary className="cursor-pointer list-none">
                     <div className="flex items-center justify-between gap-3">
                       <div>
@@ -1148,22 +1148,22 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
                     </div>
                   </summary>
 
-                  <div className="mt-3 space-y-3">
+                  <div className="mt-3 grid gap-3 md:grid-cols-2 2xl:grid-cols-3">
                     {group.items.map(reflection => {
                       const isExpanded = expandedId === reflection.id;
                       return (
                         <article
                           key={reflection.id}
-                          className="overflow-hidden rounded-2xl border border-slate-200 bg-slate-50"
+                          className="min-w-0 overflow-hidden rounded-2xl border border-slate-200 bg-slate-50"
                         >
                           {reflection.images?.length ? (
-                            <div className="grid grid-cols-2 gap-[1px] bg-slate-200 sm:grid-cols-4">
-                              {reflection.images.map(image => (
+                            <div className="grid grid-cols-3 gap-[1px] bg-slate-200">
+                              {reflection.images.slice(0, 6).map(image => (
                                 <a key={image.path} href={image.url} target="_blank" rel="noreferrer">
                                   <img
                                     src={image.url}
                                     alt="Shared reflection upload"
-                                    className="h-24 w-full object-cover"
+                                    className="h-20 w-full object-cover"
                                     loading="lazy"
                                   />
                                 </a>
@@ -1177,27 +1177,29 @@ export function TeacherDashboard({ activeTab = "live" }: { activeTab?: TeacherTa
                               setFeedbackText("");
                               setFeedbackStatus("idle");
                             }}
-                            className="w-full p-4 text-left"
+                            className="w-full p-3 text-left"
                           >
                             <div className="flex flex-wrap items-center gap-2">
-                              <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
+                              <span className="rounded-full bg-blue-50 px-2.5 py-1 text-[11px] font-semibold text-blue-700">
                                 {getReflectionCompetencyLabel(reflection)}
                               </span>
-                              <span className="rounded-full bg-rose-50 px-3 py-1 text-xs font-semibold text-rose-700">
+                              <span className="rounded-full bg-rose-50 px-2.5 py-1 text-[11px] font-semibold text-rose-700">
                                 {getReflectionTypeLabel(getReflectionType(reflection))}
                               </span>
-                              <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-slate-500">
+                              <span className="rounded-full bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-500">
                                 {formatDate(reflection)}
                               </span>
                             </div>
-                            <h3 className="mt-3 text-lg font-bold text-slate-900">{reflection.title}</h3>
-                            <p className="mt-2 line-clamp-3 whitespace-pre-line text-sm leading-6 text-slate-600">
+                            <h3 className="mt-3 line-clamp-2 text-base font-bold leading-snug text-slate-900">
+                              {reflection.title}
+                            </h3>
+                            <p className="mt-2 line-clamp-2 whitespace-pre-line text-xs leading-5 text-slate-600">
                               {reflection.body}
                             </p>
                           </button>
 
                           {isExpanded ? (
-                            <div className="space-y-4 border-t border-slate-200 bg-white p-4">
+                            <div className="space-y-3 border-t border-slate-200 bg-white p-3">
                               <p className="whitespace-pre-line text-sm leading-6 text-slate-700">
                                 {reflection.body}
                               </p>
