@@ -416,6 +416,20 @@ export function ReflectionForm() {
             : "border-slate-200 bg-white text-slate-600"
         }`;
 
+  function goBackInFlow() {
+    if (status === "saving") return;
+    if (!entryType) return;
+    if (entryType === "lesson" && step > 0) {
+      setStep(current => current - 1);
+      return;
+    }
+    if (entryType !== "lesson" && step > 1) {
+      setStep(current => current - 1);
+      return;
+    }
+    resetFlow();
+  }
+
   return (
     <form
       onSubmit={handleSave}
@@ -484,9 +498,25 @@ export function ReflectionForm() {
       ) : (
         <>
           <div className="mb-4 flex items-center justify-between">
-            <p className={isStudio ? "studio-kicker" : "text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"}>
-              {stepLabel}
-            </p>
+            <div className="flex items-center gap-3">
+              {status !== "saved" ? (
+                <button
+                  type="button"
+                  onClick={goBackInFlow}
+                  disabled={status === "saving"}
+                  className={
+                    isStudio
+                      ? "studio-small-pill disabled:cursor-not-allowed disabled:opacity-45"
+                      : "rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-600 disabled:cursor-not-allowed disabled:opacity-45"
+                  }
+                >
+                  Back
+                </button>
+              ) : null}
+              <p className={isStudio ? "studio-kicker" : "text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"}>
+                {stepLabel}
+              </p>
+            </div>
             <div className="flex gap-1.5">
               {Array.from({ length: totalSteps }, (_, index) => index + 1).map(point => (
                 <span
